@@ -1,0 +1,71 @@
+:host {
+  display: block;
+  position: relative;
+  z-index: 50;
+}
+
+.title-bar {
+  display: flex;
+  align-items: stretch;
+  height: 36px;
+  background: #1f1f1f;
+  color: #cccccc;
+  user-select: none;
+}
+
+.app-identity {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 12px 0 10px;
+  cursor: default;
+}
+
+.app-identity span,
+.app-identity svg {
+  pointer-events: none;
+}
+
+.logo {
+  width: 18px;
+  height: 18px;
+}
+
+.app-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e8e8e8;
+}
+
+.title-center {
+  position: absolute;
+  left: calc(50% + 40px);
+  transform: translateX(-50%);
+  top: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  max-width: 20%;
+  overflow: hidden;
+  font-size: 12.5px;
+  color: #9a9a9a;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.title-spacer {
+  flex: 1;
+}
+
+@media (max-width: 1250px) {
+  .title-center {
+    display: none;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-name {
+    display: none;
+  }
+}

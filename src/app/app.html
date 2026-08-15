@@ -1,0 +1,17 @@
+<div class="app-shell">
+  <app-title-bar></app-title-bar>
+  <app-tool-bar (command)="onCommand($event)"></app-tool-bar>
+  <main class="workspace">
+    <app-canvas
+      (positionChange)="onCanvasPosition($event)"
+      (dirty)="onCanvasDirty()"
+      (newRequested)="onNew()"
+      (openRequested)="onOpen()"
+    ></app-canvas>
+  </main>
+  <app-status-bar
+    [position]="cursorPos"
+    [document]="doc.document()"
+    [error]="doc.error()"
+  ></app-status-bar>
+</div>

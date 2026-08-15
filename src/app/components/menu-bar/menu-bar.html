@@ -1,0 +1,42 @@
+<div class="menu-bar" data-tauri-drag-region>
+  @for (menu of menus; track menu.label; let i = $index) {
+    <div class="menu">
+      <button
+        class="menu-title"
+        [class.open]="openIndex() === i"
+        (click)="toggleMenu(i, $event)"
+        (dblclick)="$event.stopPropagation()"
+      >
+        {{ menu.label }}
+      </button>
+      @if (openIndex() === i) {
+        <div
+          class="menu-dropdown"
+          [style.top]="dropdownStyle()?.top ?? '0px'"
+          [style.left]="dropdownStyle()?.left ?? '0px'"
+        >
+          @for (item of menu.items; track item.id + item.label) {
+            @if (item.label === '-') {
+              <div class="separator"></div>
+            } @else {
+              <button
+                class="menu-item"
+                [class.disabled]="item.disabled"
+                [disabled]="item.disabled"
+                (click)="select(item)"
+              >
+                <span class="item-label">{{ item.label }}</span>
+                @if (item.shortcut) {
+                  <span class="item-shortcut">{{ item.shortcut }}</span>
+                }
+              </button>
+            }
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+@if (openIndex() !== null) {
+  <div class="menu-backdrop" (click)="close()"></div>
+}

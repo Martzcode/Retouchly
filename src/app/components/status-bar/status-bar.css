@@ -1,0 +1,24 @@
+:host {
+  display: block;
+}
+
+.status-bar {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  height: 26px;
+  padding: 0 10px;
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  font-size: 12px;
+  color: var(--text-secondary);
+  user-select: none;
+}
+
+.status-spacer {
+  flex: 1;
+}
+
+.status-error {
+  color: var(--danger);
+}

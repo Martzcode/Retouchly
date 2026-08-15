@@ -1,0 +1,24 @@
+<header
+  class="title-bar"
+  data-tauri-drag-region
+  (dblclick)="toggleMaximize()"
+>
+  <div class="app-identity" data-tauri-drag-region>
+    <svg class="logo" viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="2" y="2" width="20" height="20" rx="5" fill="#2563eb"/>
+      <rect x="10" y="8.5" width="4" height="7" rx="2" transform="rotate(-20 12 12)" fill="#ffcd42"/>
+      <path d="M8.5 16 6 13.5l-1 1 3.5 3.5L14 12.5l-1-1-4.5 4.5z" fill="#ef4444"/>
+      <circle cx="17" cy="7" r="1.4" fill="#34d399"/>
+      <circle cx="6.5" cy="7.5" r="1.1" fill="#f43f5e"/>
+    </svg>
+    <span class="app-name">Retouchly</span>
+  </div>
+  <app-menu-bar></app-menu-bar>
+  <div class="title-center" data-tauri-drag-region>
+    <span>
+      {{ doc.document().fileName ?? 'Sans titre' }}{{ doc.document().dirty ? ' *' : '' }}
+    </span>
+  </div>
+  <div class="title-spacer" data-tauri-drag-region></div>
+  <app-window-controls></app-window-controls>
+</header>

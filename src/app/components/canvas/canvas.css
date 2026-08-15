@@ -1,0 +1,82 @@
+:host {
+  display: block;
+  flex: 1;
+  min-height: 0;
+}
+
+.canvas-stage {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: auto;
+  background: var(--workspace);
+  background-image:
+    linear-gradient(45deg, var(--workspace-check) 25%, transparent 25%),
+    linear-gradient(-45deg, var(--workspace-check) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, var(--workspace-check) 75%),
+    linear-gradient(-45deg, transparent 75%, var(--workspace-check) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  display: grid;
+  place-items: center;
+}
+
+.canvas-stage canvas {
+  background: #fff;
+  box-shadow: 0 2px 14px rgba(0, 0, 0, 0.25);
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.canvas-stage.no-doc canvas {
+  visibility: hidden;
+}
+
+.empty-state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  color: var(--text-disabled);
+  text-align: center;
+  pointer-events: auto;
+}
+
+.empty-icon {
+  width: 56px;
+  height: 56px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0.6;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.empty-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.empty-actions button {
+  padding: 8px 16px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  cursor: default;
+}
+
+.empty-actions button:hover {
+  background: var(--hover);
+}

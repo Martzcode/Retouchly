@@ -1,0 +1,19 @@
+<div class="status-bar">
+  @if (error()) {
+    <span class="status-error">{{ error() }}</span>
+  } @else {
+    <span class="status-item">
+      Position : {{ position().x }}, {{ position().y }}
+    </span>
+    <span class="status-item">Zoom : 100%</span>
+    <span class="status-spacer"></span>
+    <span class="status-item">
+      @if (document().fileName) {
+        {{ document().fileName }}{{ document().dirty ? ' *' : '' }}
+        — {{ document().width }} × {{ document().height }}
+      } @else {
+        Aucun document
+      }
+    </span>
+  }
+</div>
