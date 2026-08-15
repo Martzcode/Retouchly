@@ -13,7 +13,7 @@
     </svg>
     <span class="app-name">Retouchly</span>
   </div>
-  <app-menu-bar></app-menu-bar>
+  <app-menu-bar (command)="command.emit($event)"></app-menu-bar>
   <div class="title-center" data-tauri-drag-region>
     <span>
       {{ doc.document().fileName ?? 'Sans titre' }}{{ doc.document().dirty ? ' *' : '' }}

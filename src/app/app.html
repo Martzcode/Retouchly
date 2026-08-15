@@ -1,5 +1,5 @@
 <div class="app-shell">
-  <app-title-bar></app-title-bar>
+  <app-title-bar (command)="onCommand($event)"></app-title-bar>
   <app-tool-bar (command)="onCommand($event)"></app-tool-bar>
   <main class="workspace">
     <app-canvas
