@@ -1,4 +1,4 @@
-import { Component, EventEmitter, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Input, Output, signal } from '@angular/core';
 import { CommandEvent } from '../../types';
 
 interface MenuItem {
@@ -22,6 +22,8 @@ const DROPDOWN_MIN_WIDTH = 230;
   styleUrl: './menu-bar.css',
 })
 export class MenuBarComponent {
+  @Input() undoEnabled = false;
+  @Input() redoEnabled = false;
   @Output() command = new EventEmitter<CommandEvent>();
 
   protected readonly openIndex = signal<number | null>(null);
@@ -43,9 +45,13 @@ export class MenuBarComponent {
     {
       label: 'Édition',
       items: [
-        { id: 'undo', label: 'Annuler', shortcut: 'Ctrl+Z', disabled: true },
-        { id: 'redo', label: 'Rétablir', shortcut: 'Ctrl+Y', disabled: true },
+        { id: 'undo', label: 'Annuler', shortcut: 'Ctrl+Z' },
+        { id: 'redo', label: 'Rétablir', shortcut: 'Ctrl+Y' },
         { id: 'sep-1', label: '-' },
+        { id: 'selectAll', label: 'Tout sélectionner', shortcut: 'Ctrl+A' },
+        { id: 'deselect', label: 'Désélectionner', shortcut: 'Ctrl+Maj+A' },
+        { id: 'invertSelection', label: 'Inverser la sélection', shortcut: 'Ctrl+I' },
+        { id: 'sep-2', label: '-' },
         { id: 'cut', label: 'Couper', shortcut: 'Ctrl+X', disabled: true },
         { id: 'copy', label: 'Copier', shortcut: 'Ctrl+C', disabled: true },
         { id: 'paste', label: 'Coller', shortcut: 'Ctrl+V', disabled: true },
@@ -101,11 +107,21 @@ export class MenuBarComponent {
   }
 
   protected select(item: MenuItem): void {
-    if (item.disabled || item.label === '-') {
+    if (this.isDisabled(item) || item.label === '-') {
       return;
     }
     this.command.emit({ id: item.id });
     this.close();
+  }
+
+  protected isDisabled(item: MenuItem): boolean {
+    if (item.id === 'undo') {
+      return !this.undoEnabled;
+    }
+    if (item.id === 'redo') {
+      return !this.redoEnabled;
+    }
+    return !!item.disabled;
   }
 
   protected close(): void {

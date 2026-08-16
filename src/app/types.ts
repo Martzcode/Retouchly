@@ -17,4 +17,14 @@ export interface CommandEvent {
   id: string;
 }
 
-export type Tool = 'pencil' | 'brush' | 'eraser' | 'pipette' | 'selectRect';
+export type Tool =
+  | 'pencil'
+  | 'brush'
+  | 'eraser'
+  | 'pipette'
+  | 'selectRect'
+  | 'selectEllipse'
+  | 'lasso'
+  | 'wand';
+
+export type SelectionMode = 'replace' | 'add' | 'subtract' | 'intersect' | 'xor';

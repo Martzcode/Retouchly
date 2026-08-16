@@ -1,4 +1,4 @@
-import { Component, EventEmitter, inject, Output } from '@angular/core';
+import { Component, EventEmitter, inject, Input, Output } from '@angular/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { DocumentService } from '../../services/document.service';
 import { CommandEvent } from '../../types';
@@ -12,6 +12,8 @@ import { WindowControlsComponent } from '../window-controls/window-controls';
   styleUrl: './title-bar.css',
 })
 export class TitleBarComponent {
+  @Input() undoEnabled = false;
+  @Input() redoEnabled = false;
   @Output() command = new EventEmitter<CommandEvent>();
 
   protected readonly doc = inject(DocumentService);

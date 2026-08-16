@@ -49,3 +49,32 @@
 .opt-hint {
   white-space: nowrap;
 }
+
+.opt-modes {
+  display: flex;
+  gap: 4px;
+}
+
+.opt-mode {
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  font-size: 11px;
+  padding: 3px 8px;
+  cursor: default;
+  white-space: nowrap;
+}
+
+.opt-mode.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.opt-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}

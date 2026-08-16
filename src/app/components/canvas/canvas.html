@@ -9,7 +9,8 @@
   (contextmenu)="onContextMenu($event)"
 >
   <div #wrap class="canvas-wrap">
-    <canvas #canvas></canvas>
+    <canvas #canvas class="main-canvas"></canvas>
+    <canvas #seloverlay class="selection-overlay"></canvas>
     @if (toolPreview(); as tp) {
       <div
         class="tool-preview"
@@ -18,15 +19,6 @@
         [style.top.px]="tp.y"
         [style.width.px]="tp.size"
         [style.height.px]="tp.size"
-      ></div>
-    }
-    @if (selPx(); as sel) {
-      <div
-        class="selection-overlay"
-        [style.left.px]="sel.x"
-        [style.top.px]="sel.y"
-        [style.width.px]="sel.w"
-        [style.height.px]="sel.h"
       ></div>
     }
   </div>

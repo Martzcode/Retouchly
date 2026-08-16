@@ -1,6 +1,14 @@
 <div class="app-shell">
-  <app-title-bar (command)="onCommand($event)"></app-title-bar>
-  <app-tool-bar (command)="onCommand($event)"></app-tool-bar>
+  <app-title-bar
+    (command)="onCommand($event)"
+    [undoEnabled]="canvas.canUndo()"
+    [redoEnabled]="canvas.canRedo()"
+  ></app-title-bar>
+  <app-tool-bar
+    (command)="onCommand($event)"
+    [canUndo]="canvas.canUndo()"
+    [canRedo]="canvas.canRedo()"
+  ></app-tool-bar>
   <app-tool-options></app-tool-options>
   <main class="workspace">
     <app-tools-palette></app-tools-palette>

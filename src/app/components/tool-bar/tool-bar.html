@@ -25,13 +25,13 @@
     </svg>
   </button>
   <div class="tool-separator"></div>
-  <button class="tool-btn" title="Annuler (Ctrl+Z)" disabled>
+  <button class="tool-btn" title="Annuler (Ctrl+Z)" [disabled]="!canUndo" (click)="command.emit({ id: 'undo' })">
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M9 14 4 9l5-5"/>
       <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11"/>
     </svg>
   </button>
-  <button class="tool-btn" title="Rétablir (Ctrl+Y)" disabled>
+  <button class="tool-btn" title="Rétablir (Ctrl+Y)" [disabled]="!canRedo" (click)="command.emit({ id: 'redo' })">
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="m15 14 5-5-5-5"/>
       <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13"/>

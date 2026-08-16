@@ -31,7 +31,7 @@ export class App {
   private readonly tools = inject(ToolService);
   private readonly colors = inject(ColorsService);
 
-  @ViewChild(CanvasComponent) private canvas!: CanvasComponent;
+  @ViewChild(CanvasComponent, { static: true }) canvas!: CanvasComponent;
 
   protected cursorPos = { x: 0, y: 0 };
   protected zoom = signal(1);
@@ -59,7 +59,27 @@ export class App {
     } else if (event.key === 'Escape') {
       this.canvas.clearSelection();
     } else if (!this.isTypingTarget(event)) {
-      if (key === 'x') {
+      if (mod && key === 'z') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          this.canvas.redo();
+        } else {
+          this.canvas.undo();
+        }
+      } else if (mod && key === 'y') {
+        event.preventDefault();
+        this.canvas.redo();
+      } else if (mod && key === 'a') {
+        event.preventDefault();
+        if (event.shiftKey) {
+          this.canvas.clearSelection();
+        } else {
+          this.canvas.selectAll();
+        }
+      } else if (mod && key === 'i') {
+        event.preventDefault();
+        this.canvas.invertSelection();
+      } else if (key === 'x') {
         this.colors.swap();
       } else if (key === 'b') {
         this.tools.setTool('brush');
@@ -71,6 +91,12 @@ export class App {
         this.tools.setTool('pipette');
       } else if (key === 'r') {
         this.tools.setTool('selectRect');
+      } else if (key === 'o') {
+        this.tools.setTool('selectEllipse');
+      } else if (key === 'l') {
+        this.tools.setTool('lasso');
+      } else if (key === 'w') {
+        this.tools.setTool('wand');
       }
     }
   }
@@ -112,6 +138,21 @@ export class App {
         break;
       case 'quit':
         void getCurrentWindow().close();
+        break;
+      case 'undo':
+        this.canvas.undo();
+        break;
+      case 'redo':
+        this.canvas.redo();
+        break;
+      case 'selectAll':
+        this.canvas.selectAll();
+        break;
+      case 'deselect':
+        this.canvas.clearSelection();
+        break;
+      case 'invertSelection':
+        this.canvas.invertSelection();
         break;
     }
   }

@@ -21,8 +21,8 @@
             } @else {
               <button
                 class="menu-item"
-                [class.disabled]="item.disabled"
-                [disabled]="item.disabled"
+                [class.disabled]="isDisabled(item)"
+                [disabled]="isDisabled(item)"
                 (click)="select(item)"
               >
                 <span class="item-label">{{ item.label }}</span>

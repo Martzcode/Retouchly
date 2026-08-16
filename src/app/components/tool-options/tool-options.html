@@ -1,4 +1,19 @@
 <div class="tool-options">
+  @if (isSelectionTool()) {
+    <span class="opt-label">Mode de sélection</span>
+    <div class="opt-modes" role="group" aria-label="Mode de sélection">
+      @for (mode of modes; track mode) {
+        <button
+          class="opt-mode"
+          [class.active]="selectionMode() === mode"
+          [title]="modeLabels[mode]"
+          (click)="setMode(mode)"
+        >
+          {{ modeLabels[mode] }}
+        </button>
+      }
+    </div>
+  }
   @switch (activeTool()) {
     @case ('brush') {
       <span class="opt-label">{{ labels['brush'] }}</span>
@@ -112,7 +127,41 @@
     }
     @case ('selectRect') {
       <span class="opt-label">{{ labels['selectRect'] }}</span>
-      <span class="opt-hint">Glissez pour définir une sélection — Échap pour désélectionner</span>
+      <span class="opt-hint">Glissez pour définir — Échap pour désélectionner</span>
+    }
+    @case ('selectEllipse') {
+      <span class="opt-label">{{ labels['selectEllipse'] }}</span>
+      <span class="opt-hint">Glissez pour définir une ellipse</span>
+    }
+    @case ('lasso') {
+      <span class="opt-label">{{ labels['lasso'] }}</span>
+      <span class="opt-hint">Tracez une forme libre</span>
+    }
+    @case ('wand') {
+      <span class="opt-label">{{ labels['wand'] }}</span>
+      <label class="opt">
+        Tolérance
+        <input
+          class="opt-range"
+          type="range"
+          min="0"
+          max="100"
+          [value]="wandTolerance()"
+          (input)="setWandTolerance($any($event.target).value)"
+        />
+        <input
+          class="opt-number"
+          type="number"
+          min="0"
+          max="100"
+          [value]="wandTolerance()"
+          (input)="setWandTolerance($any($event.target).value)"
+        />
+      </label>
+      <label class="opt-check">
+        <input type="checkbox" [checked]="wandGlobal()" (change)="toggleWandGlobal()" />
+        Global (toute l'image)
+      </label>
     }
   }
 </div>
