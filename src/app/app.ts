@@ -1,11 +1,13 @@
 import { Component, HostListener, inject, signal, ViewChild } from '@angular/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { CanvasComponent } from './components/canvas/canvas';
+import { ColorsPanelComponent } from './components/colors-panel/colors-panel';
 import { StatusBarComponent } from './components/status-bar/status-bar';
 import { TitleBarComponent } from './components/title-bar/title-bar';
 import { ToolBarComponent } from './components/tool-bar/tool-bar';
 import { ToolOptionsComponent } from './components/tool-options/tool-options';
 import { ToolsPaletteComponent } from './components/tools-palette/tools-palette';
+import { ColorsService } from './services/colors.service';
 import { DocumentService } from './services/document.service';
 import { ToolService, TOOL_LABELS } from './services/tool.service';
 import { CommandEvent } from './types';
@@ -18,6 +20,7 @@ import { CommandEvent } from './types';
     ToolOptionsComponent,
     ToolsPaletteComponent,
     CanvasComponent,
+    ColorsPanelComponent,
     StatusBarComponent,
   ],
   templateUrl: './app.html',
@@ -26,6 +29,7 @@ import { CommandEvent } from './types';
 export class App {
   protected readonly doc = inject(DocumentService);
   private readonly tools = inject(ToolService);
+  private readonly colors = inject(ColorsService);
 
   @ViewChild(CanvasComponent) private canvas!: CanvasComponent;
 
@@ -54,7 +58,29 @@ export class App {
       void getCurrentWindow().close();
     } else if (event.key === 'Escape') {
       this.canvas.clearSelection();
+    } else if (!this.isTypingTarget(event)) {
+      if (key === 'x') {
+        this.colors.swap();
+      } else if (key === 'b') {
+        this.tools.setTool('brush');
+      } else if (key === 'p') {
+        this.tools.setTool('pencil');
+      } else if (key === 'e') {
+        this.tools.setTool('eraser');
+      } else if (key === 'i') {
+        this.tools.setTool('pipette');
+      } else if (key === 'r') {
+        this.tools.setTool('selectRect');
+      }
     }
+  }
+
+  private isTypingTarget(event: KeyboardEvent): boolean {
+    const target = event.target as HTMLElement | null;
+    return (
+      !!target &&
+      (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+    );
   }
 
   protected toolLabel(): string {

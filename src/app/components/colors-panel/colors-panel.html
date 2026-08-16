@@ -1,0 +1,82 @@
+<div class="colors-panel">
+  <div class="cp-swatches">
+    <button
+      class="cp-swatch cp-primary"
+      [class.selected]="target() === 'primary'"
+      [style.background]="primaryCss()"
+      (click)="setTarget('primary')"
+      (contextmenu)="prevent($event)"
+      title="Couleur primaire (clic gauche)"
+    ></button>
+    <div class="cp-swatch-col">
+      <button
+        class="cp-swatch cp-secondary"
+        [class.selected]="target() === 'secondary'"
+        [style.background]="secondaryCss()"
+        (click)="setTarget('secondary')"
+        (contextmenu)="prevent($event)"
+        title="Couleur secondaire (clic droit)"
+      ></button>
+      <button class="cp-swap" (click)="swap()" title="Inverser (X)">&#8646;</button>
+    </div>
+  </div>
+
+  <div
+    class="cp-sv"
+    [style.background]="svBackground()"
+    (pointerdown)="startSv($event)"
+    (pointermove)="moveSv($event)"
+    (pointerup)="endPick()"
+    (contextmenu)="prevent($event)"
+  >
+    <span class="cp-marker" [style.left.%]="svS()" [style.top.%]="svV()"></span>
+  </div>
+
+  <div
+    class="cp-hue"
+    (pointerdown)="startHue($event)"
+    (pointermove)="moveHue($event)"
+    (pointerup)="endPick()"
+    (contextmenu)="prevent($event)"
+  >
+    <span class="cp-hue-marker" [style.left.%]="huePos()"></span>
+  </div>
+
+  <div class="cp-alpha">
+    <label>Opacité</label>
+    <input type="range" min="0" max="100" [value]="alphaPct()" (input)="onAlpha($event)" />
+    <span>{{ alphaPct() }}%</span>
+  </div>
+
+  <div class="cp-hex">
+    <label>Hex</label>
+    <input [value]="targetHex()" (change)="onHex($event)" spellcheck="false" />
+  </div>
+
+  <div class="cp-channels">
+    <label>R</label>
+    <input type="number" min="0" max="255" [value]="rgb().r" (input)="onRgb($event, 0)" />
+    <label>V</label>
+    <input type="number" min="0" max="255" [value]="rgb().g" (input)="onRgb($event, 1)" />
+    <label>B</label>
+    <input type="number" min="0" max="255" [value]="rgb().b" (input)="onRgb($event, 2)" />
+  </div>
+
+  <div class="cp-channels">
+    <label>T</label>
+    <input type="number" min="0" max="360" [value]="hsv().h" (input)="onHsv($event, 0)" />
+    <label>S</label>
+    <input type="number" min="0" max="100" [value]="hsv().s" (input)="onHsv($event, 1)" />
+    <label>V</label>
+    <input type="number" min="0" max="100" [value]="hsv().v" (input)="onHsv($event, 2)" />
+  </div>
+
+  <div class="cp-recent">
+    <span class="cp-recent-title">Récentes</span>
+    <div class="cp-recent-row">
+      @for (c of recent(); track c) {
+        <button class="cp-recent-swatch" [style.background]="c" (click)="useRecent(c)" [title]="c"></button>
+      }
+    </div>
+  </div>
+</div>

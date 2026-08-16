@@ -43,6 +43,7 @@ export class CanvasComponent implements OnDestroy {
 
   private ctx!: CanvasRenderingContext2D;
   private drawing = false;
+  private strokeSecondary = false;
   private nativeWidth = 320;
   private nativeHeight = 240;
 
@@ -142,14 +143,18 @@ export class CanvasComponent implements OnDestroy {
 
     const tool = this.tool();
     if (tool === 'pipette') {
-      this.pickColor(pos);
+      this.pickColor(pos, event.button === 2);
       return;
     }
     if (tool === 'selectRect') {
+      if (event.button !== 0) {
+        return;
+      }
       this.selection = null;
       this.dragSelection = { x: pos.x, y: pos.y, w: 0, h: 0 };
       return;
     }
+    this.strokeSecondary = event.button === 2;
     this.drawing = true;
     this.stageRef.nativeElement.setPointerCapture(event.pointerId);
     this.last = pos;
@@ -227,11 +232,19 @@ export class CanvasComponent implements OnDestroy {
     }
   }
 
-  private pickColor(pos: { x: number; y: number }): void {
+  private pickColor(pos: { x: number; y: number }, secondary: boolean): void {
     const x = Math.floor(Math.max(0, Math.min(this.nativeWidth - 1, pos.x)));
     const y = Math.floor(Math.max(0, Math.min(this.nativeHeight - 1, pos.y)));
     const data = this.ctx.getImageData(x, y, 1, 1).data;
-    this.colors.setPrimaryFromRgb(data[0], data[1], data[2]);
+    if (secondary) {
+      this.colors.setSecondaryFromRgba(data[0], data[1], data[2], data[3]);
+    } else {
+      this.colors.setPrimaryFromRgba(data[0], data[1], data[2], data[3]);
+    }
+  }
+
+  protected onContextMenu(event: MouseEvent): void {
+    event.preventDefault();
   }
 
   private stampAt(x: number, y: number): void {
@@ -248,7 +261,7 @@ export class CanvasComponent implements OnDestroy {
 
   private stampSquare(x: number, y: number): void {
     const s = Math.max(1, Math.round(this.tools.brushSize()));
-    this.ctx.fillStyle = this.colors.primaryRgba(1);
+    this.ctx.fillStyle = this.strokeColor();
     this.ctx.fillRect(Math.round(x - s / 2), Math.round(y - s / 2), s, s);
   }
 
@@ -259,16 +272,24 @@ export class CanvasComponent implements OnDestroy {
     const isEraser = this.tool() === 'eraser';
     const inner = (radius * hardness) / 100;
     if (hardness >= 100) {
-      this.ctx.fillStyle = isEraser ? 'rgba(0,0,0,1)' : this.colors.primaryRgba(1);
+      this.ctx.fillStyle = isEraser ? 'rgba(0,0,0,1)' : this.strokeColor();
     } else {
       const gradient = this.ctx.createRadialGradient(x, y, inner, x, y, radius);
-      gradient.addColorStop(0, isEraser ? 'rgba(0,0,0,1)' : this.colors.primaryRgba(1));
-      gradient.addColorStop(1, isEraser ? 'rgba(0,0,0,0)' : this.colors.primaryRgba(0));
+      gradient.addColorStop(0, isEraser ? 'rgba(0,0,0,1)' : this.strokeColor());
+      gradient.addColorStop(1, isEraser ? 'rgba(0,0,0,0)' : this.strokeColorFaded());
       this.ctx.fillStyle = gradient;
     }
     this.ctx.beginPath();
     this.ctx.arc(x, y, radius, 0, Math.PI * 2);
     this.ctx.fill();
+  }
+
+  private strokeColor(): string {
+    return this.strokeSecondary ? this.colors.secondaryRgba() : this.colors.primaryRgba();
+  }
+
+  private strokeColorFaded(): string {
+    return this.strokeSecondary ? this.colors.secondaryRgba(0) : this.colors.primaryRgba(0);
   }
 
   private stampSegment(x0: number, y0: number, x1: number, y1: number): void {
