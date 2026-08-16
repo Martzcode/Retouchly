@@ -12,6 +12,7 @@ export class StatusBarComponent {
   document = input.required<DocumentInfo>();
   error = input<string | null>(null);
   zoom = input(1);
+  tool = input('');
 
   protected zoomLabel(): string {
     const percent = this.zoom() * 100;

@@ -5,8 +5,18 @@ import {
   OnDestroy,
   Output,
   ViewChild,
+  inject,
   signal,
 } from '@angular/core';
+import { ColorsService } from '../../services/colors.service';
+import { ToolService } from '../../services/tool.service';
+
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
 
 @Component({
   selector: 'app-canvas',
@@ -24,6 +34,9 @@ export class CanvasComponent implements OnDestroy {
   @Output() openRequested = new EventEmitter<void>();
   @Output() zoomChange = new EventEmitter<number>();
 
+  private readonly tools = inject(ToolService);
+  private readonly colors = inject(ColorsService);
+
   hasDocument = false;
   readonly zoom = signal(1);
 
@@ -32,11 +45,13 @@ export class CanvasComponent implements OnDestroy {
   private nativeWidth = 320;
   private nativeHeight = 240;
 
+  private last: { x: number; y: number } | null = null;
+  private selection: Rect | null = null;
+  private dragSelection: Rect | null = null;
+
   private readonly activePointers = new Map<number, { x: number; y: number }>();
   private pinching = false;
   private pinchDistance = 0;
-
-  private readonly brushSize = 2;
 
   ngAfterViewInit(): void {
     this.ctx = this.canvasRef.nativeElement.getContext('2d')!;
@@ -89,6 +104,24 @@ export class CanvasComponent implements OnDestroy {
     this.adjustZoom(level / this.zoom());
   }
 
+  clearSelection(): void {
+    this.selection = null;
+    this.dragSelection = null;
+  }
+
+  protected tool(): string {
+    return this.tools.activeTool();
+  }
+
+  protected selPx(): Rect | null {
+    const r = this.dragSelection ?? this.selection;
+    if (!r || r.w < 1 || r.h < 1) {
+      return null;
+    }
+    const z = this.zoom();
+    return { x: r.x * z, y: r.y * z, w: r.w * z, h: r.h * z };
+  }
+
   protected onPointerDown(event: PointerEvent): void {
     if (!this.hasDocument) {
       return;
@@ -101,16 +134,22 @@ export class CanvasComponent implements OnDestroy {
       return;
     }
     const pos = this.toCanvasPos(event);
-    this.drawing = true;
-    this.ctx.beginPath();
-    this.ctx.moveTo(pos.x, pos.y);
-    this.ctx.lineCap = 'round';
-    this.ctx.lineJoin = 'round';
-    this.ctx.lineWidth = this.brushSize;
-    this.ctx.strokeStyle = '#111111';
-    this.ctx.lineTo(pos.x + 0.01, pos.y + 0.01);
-    this.ctx.stroke();
     this.positionChange.emit({ x: Math.floor(pos.x), y: Math.floor(pos.y) });
+
+    const tool = this.tool();
+    if (tool === 'pipette') {
+      this.pickColor(pos);
+      return;
+    }
+    if (tool === 'selectRect') {
+      this.selection = null;
+      this.dragSelection = { x: pos.x, y: pos.y, w: 0, h: 0 };
+      return;
+    }
+    this.drawing = true;
+    this.stageRef.nativeElement.setPointerCapture(event.pointerId);
+    this.last = pos;
+    this.stampAt(pos.x, pos.y);
     this.dirty.emit();
   }
 
@@ -127,11 +166,22 @@ export class CanvasComponent implements OnDestroy {
       }
       return;
     }
-    if (!this.drawing) {
+    if (this.dragSelection) {
+      const a = this.dragSelection;
+      this.dragSelection = {
+        x: Math.min(a.x, pos.x),
+        y: Math.min(a.y, pos.y),
+        w: Math.abs(pos.x - a.x),
+        h: Math.abs(pos.y - a.y),
+      };
       return;
     }
-    this.ctx.lineTo(pos.x, pos.y);
-    this.ctx.stroke();
+    if (!this.drawing || !this.last) {
+      return;
+    }
+    this.stampSegment(this.last.x, this.last.y, pos.x, pos.y);
+    this.last = pos;
+    this.dirty.emit();
   }
 
   protected onPointerUp(event: PointerEvent): void {
@@ -141,10 +191,71 @@ export class CanvasComponent implements OnDestroy {
       this.pinchDistance = 0;
     }
     this.drawing = false;
+    this.last = null;
+    if (this.dragSelection) {
+      const r = this.dragSelection;
+      this.dragSelection = null;
+      this.selection = r.w < 2 && r.h < 2 ? null : r;
+    }
   }
 
   protected onPointerLeave(): void {
     this.drawing = false;
+    this.last = null;
+  }
+
+  private pickColor(pos: { x: number; y: number }): void {
+    const x = Math.floor(Math.max(0, Math.min(this.nativeWidth - 1, pos.x)));
+    const y = Math.floor(Math.max(0, Math.min(this.nativeHeight - 1, pos.y)));
+    const data = this.ctx.getImageData(x, y, 1, 1).data;
+    this.colors.setPrimaryFromRgb(data[0], data[1], data[2]);
+  }
+
+  private stampAt(x: number, y: number): void {
+    if (this.tool() === 'eraser') {
+      this.ctx.globalCompositeOperation = 'destination-out';
+      this.stampCircle(x, y);
+      this.ctx.globalCompositeOperation = 'source-over';
+    } else if (this.tool() === 'brush') {
+      this.stampCircle(x, y);
+    } else {
+      this.stampSquare(x, y);
+    }
+  }
+
+  private stampSquare(x: number, y: number): void {
+    const s = Math.max(1, Math.round(this.tools.brushSize()));
+    this.ctx.fillStyle = this.colors.primaryRgba(1);
+    this.ctx.fillRect(Math.round(x - s / 2), Math.round(y - s / 2), s, s);
+  }
+
+  private stampCircle(x: number, y: number): void {
+    const size = Math.max(1, this.tools.brushSize());
+    const radius = size / 2;
+    const hardness = this.tools.brushHardness();
+    const isEraser = this.tool() === 'eraser';
+    const inner = (radius * hardness) / 100;
+    if (hardness >= 100) {
+      this.ctx.fillStyle = isEraser ? 'rgba(0,0,0,1)' : this.colors.primaryRgba(1);
+    } else {
+      const gradient = this.ctx.createRadialGradient(x, y, inner, x, y, radius);
+      gradient.addColorStop(0, isEraser ? 'rgba(0,0,0,1)' : this.colors.primaryRgba(1));
+      gradient.addColorStop(1, isEraser ? 'rgba(0,0,0,0)' : this.colors.primaryRgba(0));
+      this.ctx.fillStyle = gradient;
+    }
+    this.ctx.beginPath();
+    this.ctx.arc(x, y, radius, 0, Math.PI * 2);
+    this.ctx.fill();
+  }
+
+  private stampSegment(x0: number, y0: number, x1: number, y1: number): void {
+    const step = Math.max(0.5, this.tools.brushSize() / 2);
+    const dist = Math.hypot(x1 - x0, y1 - y0);
+    const steps = Math.max(1, Math.ceil(dist / step));
+    for (let i = 1; i <= steps; i++) {
+      const t = i / steps;
+      this.stampAt(x0 + (x1 - x0) * t, y0 + (y1 - y0) * t);
+    }
   }
 
   private updatePinchZoom(): void {
@@ -200,6 +311,8 @@ export class CanvasComponent implements OnDestroy {
     canvas.width = width;
     canvas.height = height;
     this.ctx.imageSmoothingEnabled = false;
+    this.selection = null;
+    this.dragSelection = null;
     this.zoom.set(1);
     this.applyZoom();
     this.zoomChange.emit(1);

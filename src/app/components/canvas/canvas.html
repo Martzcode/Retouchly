@@ -8,6 +8,15 @@
   (pointerleave)="onPointerLeave()"
 >
   <canvas #canvas></canvas>
+  @if (selPx(); as sel) {
+    <div
+      class="selection-overlay"
+      [style.left.px]="sel.x"
+      [style.top.px]="sel.y"
+      [style.width.px]="sel.w"
+      [style.height.px]="sel.h"
+    ></div>
+  }
   @if (!hasDocument) {
     <div class="empty-state">
       <svg class="empty-icon" viewBox="0 0 24 24" aria-hidden="true">

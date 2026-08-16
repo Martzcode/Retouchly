@@ -6,6 +6,9 @@
       Position : {{ position().x }}, {{ position().y }}
     </span>
     <span class="status-item">Zoom : {{ zoomLabel() }}%</span>
+    @if (tool()) {
+      <span class="status-item">{{ tool() }}</span>
+    }
     <span class="status-spacer"></span>
     <span class="status-item">
       @if (document().fileName) {

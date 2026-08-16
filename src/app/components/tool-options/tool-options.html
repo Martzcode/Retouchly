@@ -1,0 +1,118 @@
+<div class="tool-options">
+  @switch (activeTool()) {
+    @case ('brush') {
+      <span class="opt-label">{{ labels['brush'] }}</span>
+      <label class="opt">
+        Taille
+        <input
+          class="opt-range"
+          type="range"
+          min="1"
+          max="100"
+          [value]="brushSize()"
+          (input)="setSize($any($event.target).value)"
+        />
+        <input
+          class="opt-number"
+          type="number"
+          min="1"
+          max="100"
+          [value]="brushSize()"
+          (input)="setSize($any($event.target).value)"
+        />
+      </label>
+      <label class="opt">
+        Dureté
+        <input
+          class="opt-range"
+          type="range"
+          min="0"
+          max="100"
+          [value]="brushHardness()"
+          (input)="setHardness($any($event.target).value)"
+        />
+        <input
+          class="opt-number"
+          type="number"
+          min="0"
+          max="100"
+          [value]="brushHardness()"
+          (input)="setHardness($any($event.target).value)"
+        />
+        <span class="opt-unit">%</span>
+      </label>
+    }
+    @case ('pencil') {
+      <span class="opt-label">{{ labels['pencil'] }}</span>
+      <label class="opt">
+        Taille
+        <input
+          class="opt-range"
+          type="range"
+          min="1"
+          max="100"
+          [value]="brushSize()"
+          (input)="setSize($any($event.target).value)"
+        />
+        <input
+          class="opt-number"
+          type="number"
+          min="1"
+          max="100"
+          [value]="brushSize()"
+          (input)="setSize($any($event.target).value)"
+        />
+      </label>
+    }
+    @case ('eraser') {
+      <span class="opt-label">{{ labels['eraser'] }}</span>
+      <label class="opt">
+        Taille
+        <input
+          class="opt-range"
+          type="range"
+          min="1"
+          max="100"
+          [value]="brushSize()"
+          (input)="setSize($any($event.target).value)"
+        />
+        <input
+          class="opt-number"
+          type="number"
+          min="1"
+          max="100"
+          [value]="brushSize()"
+          (input)="setSize($any($event.target).value)"
+        />
+      </label>
+      <label class="opt">
+        Dureté
+        <input
+          class="opt-range"
+          type="range"
+          min="0"
+          max="100"
+          [value]="brushHardness()"
+          (input)="setHardness($any($event.target).value)"
+        />
+        <input
+          class="opt-number"
+          type="number"
+          min="0"
+          max="100"
+          [value]="brushHardness()"
+          (input)="setHardness($any($event.target).value)"
+        />
+        <span class="opt-unit">%</span>
+      </label>
+    }
+    @case ('pipette') {
+      <span class="opt-label">{{ labels['pipette'] }}</span>
+      <span class="opt-hint">Cliquez sur l'image pour prélever une couleur</span>
+    }
+    @case ('selectRect') {
+      <span class="opt-label">{{ labels['selectRect'] }}</span>
+      <span class="opt-hint">Glissez pour définir une sélection — Échap pour désélectionner</span>
+    }
+  }
+</div>

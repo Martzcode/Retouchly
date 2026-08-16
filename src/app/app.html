@@ -1,7 +1,9 @@
 <div class="app-shell">
   <app-title-bar (command)="onCommand($event)"></app-title-bar>
   <app-tool-bar (command)="onCommand($event)"></app-tool-bar>
+  <app-tool-options></app-tool-options>
   <main class="workspace">
+    <app-tools-palette></app-tools-palette>
     <app-canvas
       (positionChange)="onCanvasPosition($event)"
       (dirty)="onCanvasDirty()"
@@ -15,5 +17,6 @@
     [document]="doc.document()"
     [error]="doc.error()"
     [zoom]="zoom()"
+    [tool]="toolLabel()"
   ></app-status-bar>
 </div>

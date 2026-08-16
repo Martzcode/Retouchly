@@ -1,0 +1,47 @@
+:host {
+  display: block;
+}
+
+.tools-palette {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  width: 38px;
+  padding: 4px 0;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.tool-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 5px;
+  border: none;
+  border-radius: 5px;
+  background: transparent;
+  color: var(--text);
+  cursor: default;
+}
+
+.tool-btn:hover {
+  background: var(--hover);
+}
+
+.tool-btn.active {
+  background: var(--accent);
+  color: #ffffff;
+}
+
+.tool-btn svg {
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}

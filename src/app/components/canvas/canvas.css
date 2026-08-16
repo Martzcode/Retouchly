@@ -22,11 +22,18 @@
 }
 
 .canvas-stage canvas {
-  background: #fff;
+  position: relative;
   box-shadow: 0 2px 14px rgba(0, 0, 0, 0.25);
   cursor: crosshair;
   touch-action: none;
   margin: auto;
+}
+
+.selection-overlay {
+  position: absolute;
+  pointer-events: none;
+  border: 1px dashed #000;
+  outline: 1px solid #fff;
 }
 
 .canvas-stage.no-doc canvas {

@@ -4,17 +4,28 @@ import { CanvasComponent } from './components/canvas/canvas';
 import { StatusBarComponent } from './components/status-bar/status-bar';
 import { TitleBarComponent } from './components/title-bar/title-bar';
 import { ToolBarComponent } from './components/tool-bar/tool-bar';
+import { ToolOptionsComponent } from './components/tool-options/tool-options';
+import { ToolsPaletteComponent } from './components/tools-palette/tools-palette';
 import { DocumentService } from './services/document.service';
+import { ToolService, TOOL_LABELS } from './services/tool.service';
 import { CommandEvent } from './types';
 
 @Component({
   selector: 'app-root',
-  imports: [TitleBarComponent, ToolBarComponent, CanvasComponent, StatusBarComponent],
+  imports: [
+    TitleBarComponent,
+    ToolBarComponent,
+    ToolOptionsComponent,
+    ToolsPaletteComponent,
+    CanvasComponent,
+    StatusBarComponent,
+  ],
   templateUrl: './app.html',
   styleUrl: './app.css',
 })
 export class App {
   protected readonly doc = inject(DocumentService);
+  private readonly tools = inject(ToolService);
 
   @ViewChild(CanvasComponent) private canvas!: CanvasComponent;
 
@@ -41,7 +52,13 @@ export class App {
     } else if (mod && key === 'q') {
       event.preventDefault();
       void getCurrentWindow().close();
+    } else if (event.key === 'Escape') {
+      this.canvas.clearSelection();
     }
+  }
+
+  protected toolLabel(): string {
+    return TOOL_LABELS[this.tools.activeTool()];
   }
 
   protected onCommand(event: CommandEvent): void {

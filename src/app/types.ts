@@ -16,3 +16,5 @@ export interface DocumentInfo {
 export interface CommandEvent {
   id: string;
 }
+
+export type Tool = 'pencil' | 'brush' | 'eraser' | 'pipette' | 'selectRect';
