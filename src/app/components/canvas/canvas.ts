@@ -26,6 +26,7 @@ interface Rect {
 })
 export class CanvasComponent implements OnDestroy {
   @ViewChild('stage', { static: true }) stageRef!: ElementRef<HTMLElement>;
+  @ViewChild('wrap', { static: true }) wrapRef!: ElementRef<HTMLElement>;
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
 
   @Output() positionChange = new EventEmitter<{ x: number; y: number }>();
@@ -48,6 +49,9 @@ export class CanvasComponent implements OnDestroy {
   private last: { x: number; y: number } | null = null;
   private selection: Rect | null = null;
   private dragSelection: Rect | null = null;
+  readonly toolPreview = signal<{ x: number; y: number; size: number; square: boolean } | null>(
+    null,
+  );
 
   private readonly activePointers = new Map<number, { x: number; y: number }>();
   private pinching = false;
@@ -160,12 +164,14 @@ export class CanvasComponent implements OnDestroy {
     const pos = this.toCanvasPos(event);
     this.positionChange.emit({ x: Math.floor(pos.x), y: Math.floor(pos.y) });
     if (this.pinching) {
+      this.toolPreview.set(null);
       if (this.activePointers.has(event.pointerId)) {
         this.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
         this.updatePinchZoom();
       }
       return;
     }
+    this.updateToolPreview(pos);
     if (this.dragSelection) {
       const a = this.dragSelection;
       this.dragSelection = {
@@ -202,6 +208,23 @@ export class CanvasComponent implements OnDestroy {
   protected onPointerLeave(): void {
     this.drawing = false;
     this.last = null;
+    this.toolPreview.set(null);
+  }
+
+  private updateToolPreview(pos: { x: number; y: number }): void {
+    const tool = this.tool();
+    if (tool === 'pencil' || tool === 'brush' || tool === 'eraser') {
+      const z = this.zoom();
+      const d = Math.max(1, this.tools.brushSize() * z);
+      this.toolPreview.set({
+        x: pos.x * z - d / 2,
+        y: pos.y * z - d / 2,
+        size: d,
+        square: tool === 'pencil',
+      });
+    } else {
+      this.toolPreview.set(null);
+    }
   }
 
   private pickColor(pos: { x: number; y: number }): void {
@@ -299,9 +322,9 @@ export class CanvasComponent implements OnDestroy {
   }
 
   private applyZoom(): void {
-    const canvas = this.canvasRef.nativeElement;
-    canvas.style.width = `${this.nativeWidth * this.zoom()}px`;
-    canvas.style.height = `${this.nativeHeight * this.zoom()}px`;
+    const wrap = this.wrapRef.nativeElement;
+    wrap.style.width = `${this.nativeWidth * this.zoom()}px`;
+    wrap.style.height = `${this.nativeHeight * this.zoom()}px`;
   }
 
   private setupCanvas(width: number, height: number): void {
@@ -313,6 +336,7 @@ export class CanvasComponent implements OnDestroy {
     this.ctx.imageSmoothingEnabled = false;
     this.selection = null;
     this.dragSelection = null;
+    this.toolPreview.set(null);
     this.zoom.set(1);
     this.applyZoom();
     this.zoomChange.emit(1);
