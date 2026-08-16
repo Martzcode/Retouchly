@@ -1,9 +1,10 @@
-<div
+  <div
+  #stage
   class="canvas-stage"
   [class.no-doc]="!hasDocument"
   (pointerdown)="onPointerDown($event)"
   (pointermove)="onPointerMove($event)"
-  (pointerup)="onPointerUp()"
+  (pointerup)="onPointerUp($event)"
   (pointerleave)="onPointerLeave()"
 >
   <canvas #canvas></canvas>

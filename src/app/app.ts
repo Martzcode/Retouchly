@@ -1,4 +1,4 @@
-import { Component, HostListener, inject, ViewChild } from '@angular/core';
+import { Component, HostListener, inject, signal, ViewChild } from '@angular/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { CanvasComponent } from './components/canvas/canvas';
 import { StatusBarComponent } from './components/status-bar/status-bar';
@@ -19,6 +19,7 @@ export class App {
   @ViewChild(CanvasComponent) private canvas!: CanvasComponent;
 
   protected cursorPos = { x: 0, y: 0 };
+  protected zoom = signal(1);
 
   @HostListener('window:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
@@ -56,6 +57,15 @@ export class App {
         break;
       case 'saveAs':
         this.onSaveAs();
+        break;
+      case 'zoomIn':
+        this.canvas.zoomIn();
+        break;
+      case 'zoomOut':
+        this.canvas.zoomOut();
+        break;
+      case 'zoom100':
+        this.canvas.zoomTo(1);
         break;
       case 'quit':
         void getCurrentWindow().close();
@@ -107,6 +117,10 @@ export class App {
 
   protected onCanvasPosition(pos: { x: number; y: number }): void {
     this.cursorPos = pos;
+  }
+
+  protected onCanvasZoom(zoom: number): void {
+    this.zoom.set(zoom);
   }
 
   protected onCanvasDirty(): void {

@@ -54,9 +54,9 @@ export class MenuBarComponent {
     {
       label: 'Affichage',
       items: [
-        { id: 'zoomIn', label: 'Zoom avant', shortcut: 'Ctrl+Molette', disabled: true },
-        { id: 'zoomOut', label: 'Zoom arrière', shortcut: 'Ctrl+Molette', disabled: true },
-        { id: 'zoom100', label: 'Zoom 100%', disabled: true },
+        { id: 'zoomIn', label: 'Zoom avant', shortcut: 'Ctrl+Molette' },
+        { id: 'zoomOut', label: 'Zoom arrière', shortcut: 'Ctrl+Molette' },
+        { id: 'zoom100', label: 'Zoom 100%' },
       ],
     },
     {

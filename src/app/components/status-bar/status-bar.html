@@ -5,7 +5,7 @@
     <span class="status-item">
       Position : {{ position().x }}, {{ position().y }}
     </span>
-    <span class="status-item">Zoom : 100%</span>
+    <span class="status-item">Zoom : {{ zoomLabel() }}%</span>
     <span class="status-spacer"></span>
     <span class="status-item">
       @if (document().fileName) {

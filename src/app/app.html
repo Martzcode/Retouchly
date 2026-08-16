@@ -7,11 +7,13 @@
       (dirty)="onCanvasDirty()"
       (newRequested)="onNew()"
       (openRequested)="onOpen()"
+      (zoomChange)="onCanvasZoom($event)"
     ></app-canvas>
   </main>
   <app-status-bar
     [position]="cursorPos"
     [document]="doc.document()"
     [error]="doc.error()"
+    [zoom]="zoom()"
   ></app-status-bar>
 </div>

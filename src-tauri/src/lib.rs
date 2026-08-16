@@ -1,4 +1,6 @@
 mod commands;
+#[cfg(target_os = "linux")]
+mod zoom;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -8,6 +10,11 @@ pub fn run() {
             commands::image::open_image,
             commands::image::save_image,
         ])
+        .setup(|app| {
+            #[cfg(target_os = "linux")]
+            zoom::disable_pinch_zoom(app);
+            Ok(())
+        })
         .run(tauri::generate_context!())
         .expect("erreur lors du lancement de Retouchly");
 }
