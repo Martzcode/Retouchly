@@ -70,6 +70,18 @@ export class CanvasComponent implements OnDestroy {
   private selCreate: { type: 'rect' | 'ellipse' | 'lasso'; start: Point; pts: Point[] } | null =
     null;
   private movingSelection: { start: Point; base: Uint8Array } | null = null;
+  private moveObjectState: {
+    start: Point;
+    base: ImageData;
+    sel: Uint8Array;
+    moved: boolean;
+  } | null = null;
+  private clipboard: {
+    img: ImageData;
+    x: number;
+    y: number;
+    mask: Uint8Array | null;
+  } | null = null;
   private antFrame: number | null = null;
   private antPhase = 0;
 
@@ -136,6 +148,146 @@ export class CanvasComponent implements OnDestroy {
 
   clearSelection(): void {
     this.showSelection(null);
+  }
+
+  copySelection(): void {
+    if (!this.hasDocument) {
+      return;
+    }
+    let x = 0;
+    let y = 0;
+    let w = this.nativeWidth;
+    let h = this.nativeHeight;
+    let mask: Uint8Array | null = null;
+    if (this.selection) {
+      const b = this.selectionBounds(this.selection);
+      if (!b) {
+        return;
+      }
+      x = b.x;
+      y = b.y;
+      w = b.w;
+      h = b.h;
+      mask = new Uint8Array(w * h);
+      for (let ly = 0; ly < h; ly++) {
+        for (let lx = 0; lx < w; lx++) {
+          mask[ly * w + lx] = this.selection[(y + ly) * this.nativeWidth + (x + lx)];
+        }
+      }
+    }
+    const img = this.ctx.getImageData(x, y, w, h);
+    if (mask) {
+      const d = img.data;
+      for (let i = 0; i < w * h; i++) {
+        if (!mask[i]) {
+          d[i * 4 + 3] = 0;
+        }
+      }
+    }
+    this.clipboard = { img, x, y, mask };
+  }
+
+  cutSelection(): void {
+    if (!this.hasDocument) {
+      return;
+    }
+    this.copySelection();
+    this.pushUndoSnapshot();
+    const img = this.snapshot();
+    const d = img.data;
+    if (this.selection) {
+      const sel = this.selection;
+      for (let i = 0; i < sel.length; i++) {
+        if (sel[i]) {
+          d[i * 4] = 0;
+          d[i * 4 + 1] = 0;
+          d[i * 4 + 2] = 0;
+          d[i * 4 + 3] = 0;
+        }
+      }
+    } else {
+      d.fill(0);
+    }
+    this.ctx.putImageData(img, 0, 0);
+    this.dirty.emit();
+  }
+
+  pasteClipboard(): void {
+    const cb = this.clipboard;
+    if (!cb || !this.hasDocument) {
+      return;
+    }
+    this.pushUndoSnapshot();
+    const w = this.nativeWidth;
+    const h = this.nativeHeight;
+    const img = this.snapshot();
+    const d = img.data;
+    const cw = cb.img.width;
+    const ch = cb.img.height;
+    for (let ly = 0; ly < ch; ly++) {
+      const gy = cb.y + ly;
+      if (gy < 0 || gy >= h) {
+        continue;
+      }
+      for (let lx = 0; lx < cw; lx++) {
+        const gx = cb.x + lx;
+        if (gx < 0 || gx >= w) {
+          continue;
+        }
+        if (cb.mask && !cb.mask[ly * cw + lx]) {
+          continue;
+        }
+        const si = (ly * cw + lx) * 4;
+        const di = (gy * w + gx) * 4;
+        d[di] = cb.img.data[si];
+        d[di + 1] = cb.img.data[si + 1];
+        d[di + 2] = cb.img.data[si + 2];
+        d[di + 3] = cb.img.data[si + 3];
+      }
+    }
+    this.ctx.putImageData(img, 0, 0);
+    const sel = this.emptyMask();
+    for (let ly = 0; ly < ch; ly++) {
+      const gy = cb.y + ly;
+      if (gy < 0 || gy >= h) {
+        continue;
+      }
+      for (let lx = 0; lx < cw; lx++) {
+        const gx = cb.x + lx;
+        if (gx < 0 || gx >= w) {
+          continue;
+        }
+        if (cb.mask && !cb.mask[ly * cw + lx]) {
+          continue;
+        }
+        sel[gy * w + gx] = 1;
+      }
+    }
+    this.showSelection(sel);
+    this.dirty.emit();
+  }
+
+  private selectionBounds(mask: Uint8Array): { x: number; y: number; w: number; h: number } | null {
+    const w = this.nativeWidth;
+    const h = this.nativeHeight;
+    let minX = w;
+    let minY = h;
+    let maxX = -1;
+    let maxY = -1;
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (mask[y * w + x]) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) {
+      return null;
+    }
+    return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 };
   }
 
   selectAll(): void {
@@ -214,6 +366,10 @@ export class CanvasComponent implements OnDestroy {
       this.startSelectionTool(tool, pos, event);
       return;
     }
+    if (tool === 'moveSelection' || tool === 'moveObject') {
+      this.startMoveTool(tool, pos, event);
+      return;
+    }
     this.strokeSecondary = event.button === 2;
     this.pushUndoSnapshot();
     this.drawing = true;
@@ -243,6 +399,10 @@ export class CanvasComponent implements OnDestroy {
     }
     if (this.movingSelection) {
       this.updateSelectionMove(pos);
+      return;
+    }
+    if (this.moveObjectState) {
+      this.updateMoveObject(pos);
       return;
     }
     this.updateToolPreview(pos);
@@ -289,6 +449,20 @@ export class CanvasComponent implements OnDestroy {
       this.showSelection(this.translateMask(m.base, dx, dy));
       return;
     }
+    if (this.moveObjectState) {
+      const m = this.moveObjectState;
+      this.moveObjectState = null;
+      const pos = this.toCanvasPos(event);
+      const dx = Math.round(pos.x - m.start.x);
+      const dy = Math.round(pos.y - m.start.y);
+      if (m.moved) {
+        this.showSelection(this.translateMask(m.sel, dx, dy));
+        this.dirty.emit();
+      } else {
+        this.showSelection(this.selection);
+      }
+      return;
+    }
     this.drawing = false;
     this.last = null;
   }
@@ -322,6 +496,83 @@ export class CanvasComponent implements OnDestroy {
       pts: [pos],
     };
     this.stageRef.nativeElement.setPointerCapture(event.pointerId);
+  }
+
+  private startMoveTool(tool: string, pos: Point, event: PointerEvent): void {
+    if (event.button !== 0 || !this.selection || !this.isInsideSelection(pos)) {
+      return;
+    }
+    if (tool === 'moveObject') {
+      this.moveObjectState = {
+        start: pos,
+        base: this.snapshot(),
+        sel: this.selection.slice(),
+        moved: false,
+      };
+    } else {
+      this.movingSelection = { start: pos, base: this.selection.slice() };
+    }
+    this.stageRef.nativeElement.setPointerCapture(event.pointerId);
+  }
+
+  private updateMoveObject(pos: Point): void {
+    const m = this.moveObjectState!;
+    const dx = Math.round(pos.x - m.start.x);
+    const dy = Math.round(pos.y - m.start.y);
+    if (dx === 0 && dy === 0) {
+      return;
+    }
+    if (!m.moved) {
+      this.pushUndoSnapshot();
+      m.moved = true;
+    }
+    this.stampSelected(m.base, m.sel, dx, dy);
+    this.previewResultPath = this.buildSelectionPath(this.translateMask(m.sel, dx, dy));
+    this.previewToolPath = null;
+    this.renderSelection();
+  }
+
+  private stampSelected(base: ImageData, mask: Uint8Array, dx: number, dy: number): void {
+    const w = this.nativeWidth;
+    const h = this.nativeHeight;
+    const src = base.data;
+    const dst = this.ctx.createImageData(w, h);
+    const out = dst.data;
+    out.set(src);
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        if (!mask[y * w + x]) {
+          continue;
+        }
+        const si = (y * w + x) * 4;
+        out[si] = 0;
+        out[si + 1] = 0;
+        out[si + 2] = 0;
+        out[si + 3] = 0;
+      }
+    }
+    for (let y = 0; y < h; y++) {
+      const ny = y + dy;
+      if (ny < 0 || ny >= h) {
+        continue;
+      }
+      for (let x = 0; x < w; x++) {
+        if (!mask[y * w + x]) {
+          continue;
+        }
+        const nx = x + dx;
+        if (nx < 0 || nx >= w) {
+          continue;
+        }
+        const si = (y * w + x) * 4;
+        const di = (ny * w + nx) * 4;
+        out[di] = src[si];
+        out[di + 1] = src[si + 1];
+        out[di + 2] = src[si + 2];
+        out[di + 3] = src[si + 3];
+      }
+    }
+    this.ctx.putImageData(dst, 0, 0);
   }
 
   private isInsideSelection(pos: Point): boolean {

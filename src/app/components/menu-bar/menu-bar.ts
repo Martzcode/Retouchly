@@ -52,9 +52,9 @@ export class MenuBarComponent {
         { id: 'deselect', label: 'Désélectionner', shortcut: 'Ctrl+Maj+A' },
         { id: 'invertSelection', label: 'Inverser la sélection', shortcut: 'Ctrl+I' },
         { id: 'sep-2', label: '-' },
-        { id: 'cut', label: 'Couper', shortcut: 'Ctrl+X', disabled: true },
-        { id: 'copy', label: 'Copier', shortcut: 'Ctrl+C', disabled: true },
-        { id: 'paste', label: 'Coller', shortcut: 'Ctrl+V', disabled: true },
+        { id: 'cut', label: 'Couper', shortcut: 'Ctrl+X' },
+        { id: 'copy', label: 'Copier', shortcut: 'Ctrl+C' },
+        { id: 'paste', label: 'Coller', shortcut: 'Ctrl+V' },
       ],
     },
     {

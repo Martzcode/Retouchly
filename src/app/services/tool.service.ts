@@ -10,6 +10,8 @@ export const TOOL_LABELS: Record<Tool, string> = {
   selectEllipse: 'Sélection ellipse',
   lasso: 'Lasso',
   wand: 'Baguette magique',
+  moveSelection: 'Déplacer la sélection',
+  moveObject: 'Déplacer l’objet sélectionné',
 };
 
 export const SELECTION_MODE_LABELS: Record<SelectionMode, string> = {

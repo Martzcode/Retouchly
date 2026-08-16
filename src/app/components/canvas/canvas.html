@@ -9,7 +9,11 @@
   (contextmenu)="onContextMenu($event)"
 >
   <div #wrap class="canvas-wrap">
-    <canvas #canvas class="main-canvas"></canvas>
+    <canvas
+      #canvas
+      class="main-canvas"
+      [class.move-cursor]="tool() === 'moveSelection' || tool() === 'moveObject'"
+    ></canvas>
     <canvas #seloverlay class="selection-overlay"></canvas>
     @if (toolPreview(); as tp) {
       <div

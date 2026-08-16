@@ -36,6 +36,10 @@
   touch-action: none;
 }
 
+.canvas-stage .main-canvas.move-cursor {
+  cursor: move;
+}
+
 .tool-preview {
   position: absolute;
   pointer-events: none;

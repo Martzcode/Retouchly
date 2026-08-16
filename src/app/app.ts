@@ -79,6 +79,15 @@ export class App {
       } else if (mod && key === 'i') {
         event.preventDefault();
         this.canvas.invertSelection();
+      } else if (mod && key === 'c') {
+        event.preventDefault();
+        this.canvas.copySelection();
+      } else if (mod && key === 'x') {
+        event.preventDefault();
+        this.canvas.cutSelection();
+      } else if (mod && key === 'v') {
+        event.preventDefault();
+        this.canvas.pasteClipboard();
       } else if (key === 'x') {
         this.colors.swap();
       } else if (key === 'b') {
@@ -97,6 +106,10 @@ export class App {
         this.tools.setTool('lasso');
       } else if (key === 'w') {
         this.tools.setTool('wand');
+      } else if (key === 'v') {
+        this.tools.setTool('moveSelection');
+      } else if (key === 'm') {
+        this.tools.setTool('moveObject');
       }
     }
   }
@@ -153,6 +166,15 @@ export class App {
         break;
       case 'invertSelection':
         this.canvas.invertSelection();
+        break;
+      case 'cut':
+        this.canvas.cutSelection();
+        break;
+      case 'copy':
+        this.canvas.copySelection();
+        break;
+      case 'paste':
+        this.canvas.pasteClipboard();
         break;
     }
   }

@@ -87,4 +87,27 @@
       <path d="m9.5 14.5 4-4" />
     </svg>
   </button>
+  <button
+    class="tool-btn"
+    [class.active]="activeTool() === 'moveSelection'"
+    title="Déplacer la sélection (V)"
+    (click)="select('moveSelection')"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="5.5" y="5.5" width="13" height="13" rx="1" stroke-dasharray="4 3"/>
+      <path d="M9 12h6M12 9v6"/>
+    </svg>
+  </button>
+  <button
+    class="tool-btn"
+    [class.active]="activeTool() === 'moveObject'"
+    title="Déplacer l’objet sélectionné (M)"
+    (click)="select('moveObject')"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <rect x="5.5" y="5.5" width="13" height="13" rx="1" stroke-dasharray="4 3"/>
+      <path d="M12 4v16"/>
+      <path d="m7 9 5-5 5 5"/>
+    </svg>
+  </button>
 </div>

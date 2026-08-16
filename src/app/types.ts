@@ -25,6 +25,8 @@ export type Tool =
   | 'selectRect'
   | 'selectEllipse'
   | 'lasso'
-  | 'wand';
+  | 'wand'
+  | 'moveSelection'
+  | 'moveObject';
 
 export type SelectionMode = 'replace' | 'add' | 'subtract' | 'intersect' | 'xor';
