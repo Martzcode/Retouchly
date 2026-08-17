@@ -114,3 +114,19 @@
 .empty-actions button:hover {
   background: var(--hover);
 }
+
+.text-input-overlay {
+  position: absolute;
+  min-width: 80px;
+  min-height: 1.2em;
+  padding: 2px 4px;
+  border: 1px dashed var(--accent);
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.08);
+  outline: none;
+  resize: both;
+  overflow: auto;
+  z-index: 10;
+  line-height: 1.2;
+  white-space: pre;
+}

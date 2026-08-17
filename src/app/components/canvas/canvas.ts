@@ -1,5 +1,6 @@
 import {
   Component,
+  computed,
   ElementRef,
   EventEmitter,
   OnDestroy,
@@ -12,6 +13,23 @@ import { ColorsService } from '../../services/colors.service';
 import { LayerService } from '../../services/layer.service';
 import { ToolService } from '../../services/tool.service';
 import { LayerSnapshot, SelectionMode, ShapeType, StrokeStyle } from '../../types';
+
+interface TextEdit {
+  id: number;
+  x: number;
+  y: number;
+  font: string;
+  size: number;
+  bold: boolean;
+  italic: boolean;
+  underline: boolean;
+  align: string;
+  fill: boolean;
+  fillColor: string;
+  outline: boolean;
+  outlineWidth: number;
+  outlineColor: string;
+}
 
 interface Rect {
   x: number;
@@ -99,6 +117,13 @@ export class CanvasComponent implements OnDestroy {
   readonly toolPreview = signal<{ x: number; y: number; size: number; square: boolean } | null>(
     null,
   );
+
+  readonly textEdit = signal<TextEdit | null>(null);
+  readonly textEditArray = computed(() => {
+    const te = this.textEdit();
+    return te ? [te] : [];
+  });
+  private textEditId = 0;
 
   private readonly activePointers = new Map<number, { x: number; y: number }>();
   private pinching = false;
@@ -399,6 +424,31 @@ export class CanvasComponent implements OnDestroy {
       this.commitMask(this.wandMask(Math.floor(pos.x), Math.floor(pos.y)));
       return;
     }
+    if (tool === 'text') {
+      this.confirmText();
+      const z = this.zoom();
+      this.textEditId++;
+      this.textEdit.set({
+        id: this.textEditId,
+        x: pos.x * z,
+        y: pos.y * z,
+        font: this.tools.textFont(),
+        size: this.tools.textSize(),
+        bold: this.tools.textBold(),
+        italic: this.tools.textItalic(),
+        underline: this.tools.textUnderline(),
+        align: this.tools.textAlign(),
+        fill: this.tools.textFill(),
+        fillColor: this.colors.primary(),
+        outline: this.tools.textOutline(),
+        outlineWidth: this.tools.textOutlineWidth(),
+        outlineColor: this.colors.secondary(),
+      });
+      setTimeout(() => {
+        this.stageRef.nativeElement.querySelector<HTMLTextAreaElement>('.text-input-overlay')?.focus();
+      }, 0);
+      return;
+    }
     if (tool === 'selectRect' || tool === 'selectEllipse' || tool === 'lasso') {
       this.startSelectionTool(tool, pos, event);
       return;
@@ -571,6 +621,87 @@ export class CanvasComponent implements OnDestroy {
     this.drawing = false;
     this.last = null;
     this.toolPreview.set(null);
+  }
+
+  protected onTextKeydown(event: KeyboardEvent): void {
+    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+      event.preventDefault();
+      this.confirmText();
+    } else if (event.key === 'Escape') {
+      this.textEdit.set(null);
+    }
+  }
+
+  confirmText(): void {
+    const te = this.textEdit();
+    if (!te) {
+      return;
+    }
+    const textarea = this.stageRef.nativeElement.querySelector<HTMLTextAreaElement>('.text-input-overlay');
+    const text = textarea?.value?.trim() ?? '';
+    if (!text || !this.hasDocument) {
+      this.textEdit.set(null);
+      return;
+    }
+    this.pushUndoSnapshot();
+    const z = this.zoom();
+    const layer = this.layers.getActiveLayer()!;
+    const ctx = layer.ctx;
+    const canvasX = te.x / z;
+    const canvasY = te.y / z;
+
+    ctx.save();
+    const weight = te.bold ? 'bold' : 'normal';
+    const style = te.italic ? 'italic' : 'normal';
+    ctx.font = `${style} ${weight} ${te.size}px ${te.font}`;
+    ctx.textAlign = te.align as CanvasTextAlign;
+    ctx.textBaseline = 'top';
+
+    const lines = text.split('\n');
+    const lineHeight = te.size * 1.2;
+    let maxWidth = 0;
+    for (const line of lines) {
+      const m = ctx.measureText(line);
+      if (m.width > maxWidth) {
+        maxWidth = m.width;
+      }
+    }
+
+    for (let i = 0; i < lines.length; i++) {
+      const lineY = canvasY + i * lineHeight;
+
+      if (te.outline && te.outlineWidth > 0) {
+        ctx.strokeStyle = te.outlineColor;
+        ctx.lineWidth = te.outlineWidth * 2;
+        ctx.lineJoin = 'round';
+        ctx.strokeText(lines[i], canvasX, lineY);
+      }
+      if (te.fill) {
+        ctx.fillStyle = te.fillColor;
+        ctx.fillText(lines[i], canvasX, lineY);
+      }
+      if (te.underline) {
+        const lw = ctx.measureText(lines[i]).width;
+        let ux = canvasX;
+        if (te.align === 'center') {
+          ux -= lw / 2;
+        } else if (te.align === 'right') {
+          ux -= lw;
+        }
+        const uy = lineY + te.size + 2;
+        ctx.strokeStyle = te.fill ? te.fillColor : te.outlineColor;
+        ctx.lineWidth = Math.max(1, te.size / 16);
+        ctx.beginPath();
+        ctx.moveTo(ux, uy);
+        ctx.lineTo(ux + lw, uy);
+        ctx.stroke();
+      }
+    }
+
+    ctx.restore();
+    this.textEdit.set(null);
+    this.compositeToDisplay();
+    this.dirty.emit();
   }
 
   protected onDoubleClick(event: MouseEvent): void {

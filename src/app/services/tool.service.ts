@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { SelectionMode, ShapeType, StrokeStyle, Tool } from '../types';
+import { SelectionMode, ShapeType, StrokeStyle, TextAlign, Tool } from '../types';
 
 export const TOOL_LABELS: Record<Tool, string> = {
   pencil: 'Crayon',
@@ -13,6 +13,13 @@ export const TOOL_LABELS: Record<Tool, string> = {
   moveSelection: 'Déplacer la sélection',
   moveObject: 'Déplacer l\u2019objet sélectionné',
   drawShape: 'Forme',
+  text: 'Texte',
+};
+
+export const TEXT_ALIGN_LABELS: Record<TextAlign, string> = {
+  left: 'Gauche',
+  center: 'Centre',
+  right: 'Droite',
 };
 
 export const SHAPE_TYPE_LABELS: Record<ShapeType, string> = {
@@ -48,6 +55,15 @@ export class ToolService {
   private readonly _shapeStrokeWidth = signal(3);
   private readonly _shapeStrokeStyle = signal<StrokeStyle>('solid');
   private readonly _shapeFilled = signal(false);
+  private readonly _textFont = signal('sans-serif');
+  private readonly _textSize = signal(32);
+  private readonly _textBold = signal(false);
+  private readonly _textItalic = signal(false);
+  private readonly _textUnderline = signal(false);
+  private readonly _textAlign = signal<TextAlign>('left');
+  private readonly _textOutlineWidth = signal(0);
+  private readonly _textFill = signal(true);
+  private readonly _textOutline = signal(false);
 
   readonly activeTool = this._activeTool.asReadonly();
   readonly brushSize = this._brushSize.asReadonly();
@@ -59,6 +75,15 @@ export class ToolService {
   readonly shapeStrokeWidth = this._shapeStrokeWidth.asReadonly();
   readonly shapeStrokeStyle = this._shapeStrokeStyle.asReadonly();
   readonly shapeFilled = this._shapeFilled.asReadonly();
+  readonly textFont = this._textFont.asReadonly();
+  readonly textSize = this._textSize.asReadonly();
+  readonly textBold = this._textBold.asReadonly();
+  readonly textItalic = this._textItalic.asReadonly();
+  readonly textUnderline = this._textUnderline.asReadonly();
+  readonly textAlign = this._textAlign.asReadonly();
+  readonly textOutlineWidth = this._textOutlineWidth.asReadonly();
+  readonly textFill = this._textFill.asReadonly();
+  readonly textOutline = this._textOutline.asReadonly();
 
   setTool(tool: Tool): void {
     this._activeTool.set(tool);
@@ -98,5 +123,41 @@ export class ToolService {
 
   setShapeFilled(filled: boolean): void {
     this._shapeFilled.set(filled);
+  }
+
+  setTextFont(font: string): void {
+    this._textFont.set(font);
+  }
+
+  setTextSize(size: number): void {
+    this._textSize.set(Math.max(6, Math.min(400, Math.round(size))));
+  }
+
+  setTextBold(bold: boolean): void {
+    this._textBold.set(bold);
+  }
+
+  setTextItalic(italic: boolean): void {
+    this._textItalic.set(italic);
+  }
+
+  setTextUnderline(underline: boolean): void {
+    this._textUnderline.set(underline);
+  }
+
+  setTextAlign(align: TextAlign): void {
+    this._textAlign.set(align);
+  }
+
+  setTextOutlineWidth(width: number): void {
+    this._textOutlineWidth.set(Math.max(0, Math.min(50, Math.round(width))));
+  }
+
+  setTextFill(fill: boolean): void {
+    this._textFill.set(fill);
+  }
+
+  setTextOutline(outline: boolean): void {
+    this._textOutline.set(outline);
   }
 }

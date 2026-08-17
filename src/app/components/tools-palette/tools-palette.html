@@ -120,4 +120,16 @@
       <polygon points="12,2 22,9 18,21 6,21 2,9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
     </svg>
   </button>
+  <button
+    class="tool-btn"
+    [class.active]="activeTool() === 'text'"
+    title="Texte (T)"
+    (click)="select('text')"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M6 4h12" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+      <path d="M12 4v16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M8 20h8" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+  </button>
 </div>

@@ -28,11 +28,14 @@ export type Tool =
   | 'wand'
   | 'moveSelection'
   | 'moveObject'
-  | 'drawShape';
+  | 'drawShape'
+  | 'text';
 
 export type ShapeType = 'rectangle' | 'ellipse' | 'line' | 'polygon';
 
 export type StrokeStyle = 'solid' | 'dashed' | 'dotted';
+
+export type TextAlign = 'left' | 'center' | 'right';
 
 export type SelectionMode = 'replace' | 'add' | 'subtract' | 'intersect' | 'xor';
 

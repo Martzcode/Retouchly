@@ -240,5 +240,106 @@
         </label>
       }
     }
+    @case ('text') {
+      <span class="opt-label">{{ labels['text'] }}</span>
+      <label class="opt">
+        <select class="opt-select" [value]="textFont()" (change)="setTextFont($any($event.target).value)">
+          @for (font of webFonts(); track font) {
+            <option [value]="font" [selected]="textFont() === font" [style.font-family]="font">{{ font }}</option>
+          }
+        </select>
+      </label>
+      <label class="opt">
+        <input
+          class="opt-number"
+          type="number"
+          min="6"
+          max="400"
+          [value]="textSize()"
+          (input)="setTextSize($any($event.target).value)"
+        />
+        px
+      </label>
+      <div class="opt-modes" role="group" aria-label="Style de texte">
+        <button
+          class="opt-mode"
+          [class.active]="textBold()"
+          title="Gras"
+          (click)="toggleTextBold()"
+        ><b>B</b></button>
+        <button
+          class="opt-mode"
+          [class.active]="textItalic()"
+          title="Italique"
+          (click)="toggleTextItalic()"
+        ><i>I</i></button>
+        <button
+          class="opt-mode"
+          [class.active]="textUnderline()"
+          title="Souligné"
+          (click)="toggleTextUnderline()"
+        ><u>U</u></button>
+      </div>
+      <div class="opt-modes" role="group" aria-label="Alignement">
+        @for (a of textAligns; track a) {
+          <button
+            class="opt-mode"
+            [class.active]="textAlign() === a"
+            [title]="alignLabels[a]"
+            (click)="setTextAlign(a)"
+          >
+            <svg viewBox="0 0 16 12" class="opt-align-icon">
+              @switch (a) {
+                @case ('left') {
+                  <line x1="1" y1="2" x2="11" y2="2" stroke="currentColor" stroke-width="1.5"/>
+                  <line x1="1" y1="6" x2="8" y2="6" stroke="currentColor" stroke-width="1.5"/>
+                  <line x1="1" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.5"/>
+                }
+                @case ('center') {
+                  <line x1="2.5" y1="2" x2="13.5" y2="2" stroke="currentColor" stroke-width="1.5"/>
+                  <line x1="4" y1="6" x2="12" y2="6" stroke="currentColor" stroke-width="1.5"/>
+                  <line x1="1.5" y1="10" x2="14.5" y2="10" stroke="currentColor" stroke-width="1.5"/>
+                }
+                @case ('right') {
+                  <line x1="5" y1="2" x2="15" y2="2" stroke="currentColor" stroke-width="1.5"/>
+                  <line x1="8" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.5"/>
+                  <line x1="3" y1="10" x2="15" y2="10" stroke="currentColor" stroke-width="1.5"/>
+                }
+              }
+            </svg>
+          </button>
+        }
+      </div>
+      <label class="opt-check">
+        <input type="checkbox" [checked]="textFill()" (change)="toggleTextFill()" />
+        Remplissage
+      </label>
+      <label class="opt-check">
+        <input type="checkbox" [checked]="textOutline()" (change)="toggleTextOutline()" />
+        Contour
+      </label>
+      @if (textOutline()) {
+        <label class="opt">
+          Épaisseur contour
+          <input
+            class="opt-range"
+            type="range"
+            min="1"
+            max="20"
+            [value]="textOutlineWidth()"
+            (input)="setTextOutlineWidth($any($event.target).value)"
+          />
+          <input
+            class="opt-number"
+            type="number"
+            min="1"
+            max="20"
+            [value]="textOutlineWidth()"
+            (input)="setTextOutlineWidth($any($event.target).value)"
+          />
+        </label>
+      }
+      <span class="opt-hint">Clic sur le canvas pour placer — Ctrl+Entrée pour valider</span>
+    }
   }
 </div>

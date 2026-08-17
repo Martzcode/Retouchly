@@ -26,6 +26,22 @@
         [style.height.px]="tp.size"
       ></div>
     }
+    @for (te of textEditArray(); track te.id) {
+      <textarea
+        class="text-input-overlay"
+        [style.left.px]="te.x"
+        [style.top.px]="te.y"
+        [style.font-family]="te.font"
+        [style.font-size.px]="te.size"
+        [style.font-weight]="te.bold ? 'bold' : 'normal'"
+        [style.font-style]="te.italic ? 'italic' : 'normal'"
+        [style.text-decoration]="te.underline ? 'underline' : 'none'"
+        [style.text-align]="te.align"
+        [style.color]="'#000000'"
+        style="-webkit-text-stroke: 0;"
+        (keydown)="onTextKeydown($event)"
+      ></textarea>
+    }
   </div>
   @if (!hasDocument) {
     <div class="empty-state">

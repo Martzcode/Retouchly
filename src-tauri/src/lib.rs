@@ -9,6 +9,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::image::open_image,
             commands::image::save_image,
+            commands::fonts::list_system_fonts,
         ])
         .setup(|app| {
             #[cfg(target_os = "linux")]

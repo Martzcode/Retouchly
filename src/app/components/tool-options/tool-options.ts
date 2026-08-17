@@ -1,6 +1,13 @@
-import { Component, inject } from '@angular/core';
-import { ToolService, TOOL_LABELS, SELECTION_MODE_LABELS, SHAPE_TYPE_LABELS, STROKE_STYLE_LABELS } from '../../services/tool.service';
-import { SelectionMode, ShapeType, StrokeStyle } from '../../types';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { invoke } from '@tauri-apps/api/core';
+import { ToolService, TOOL_LABELS, SELECTION_MODE_LABELS, SHAPE_TYPE_LABELS, STROKE_STYLE_LABELS, TEXT_ALIGN_LABELS } from '../../services/tool.service';
+import { SelectionMode, ShapeType, StrokeStyle, TextAlign } from '../../types';
+
+const FALLBACK_FONTS = [
+  'Arial', 'Verdana', 'Helvetica', 'Tahoma', 'Trebuchet MS',
+  'Georgia', 'Times New Roman', 'Courier New', 'Lucida Console',
+  'Comic Sans MS', 'Impact', 'Palatino',
+];
 
 @Component({
   selector: 'app-tool-options',
@@ -8,7 +15,7 @@ import { SelectionMode, ShapeType, StrokeStyle } from '../../types';
   templateUrl: './tool-options.html',
   styleUrl: './tool-options.css',
 })
-export class ToolOptionsComponent {
+export class ToolOptionsComponent implements OnInit {
   private readonly tools = inject(ToolService);
 
   readonly activeTool = this.tools.activeTool;
@@ -21,22 +28,38 @@ export class ToolOptionsComponent {
   readonly shapeStrokeWidth = this.tools.shapeStrokeWidth;
   readonly shapeStrokeStyle = this.tools.shapeStrokeStyle;
   readonly shapeFilled = this.tools.shapeFilled;
+  readonly textFont = this.tools.textFont;
+  readonly textSize = this.tools.textSize;
+  readonly textBold = this.tools.textBold;
+  readonly textItalic = this.tools.textItalic;
+  readonly textUnderline = this.tools.textUnderline;
+  readonly textAlign = this.tools.textAlign;
+  readonly textOutlineWidth = this.tools.textOutlineWidth;
+  readonly textFill = this.tools.textFill;
+  readonly textOutline = this.tools.textOutline;
 
   protected labels = TOOL_LABELS;
   protected modeLabels = SELECTION_MODE_LABELS;
   protected shapeLabels = SHAPE_TYPE_LABELS;
   protected strokeStyleLabels = STROKE_STYLE_LABELS;
+  protected alignLabels = TEXT_ALIGN_LABELS;
   protected readonly modes: SelectionMode[] = ['replace', 'add', 'subtract', 'intersect', 'xor'];
   protected readonly shapeTypes: ShapeType[] = ['rectangle', 'ellipse', 'line', 'polygon'];
   protected readonly strokeStyles: StrokeStyle[] = ['solid', 'dashed', 'dotted'];
+  protected readonly textAligns: TextAlign[] = ['left', 'center', 'right'];
+  protected readonly webFonts = signal<string[]>(FALLBACK_FONTS);
+
+  ngOnInit(): void {
+    invoke<string[]>('list_system_fonts').then((fonts) => {
+      if (fonts.length > 0) {
+        this.webFonts.set(fonts);
+      }
+    }).catch(() => {});
+  }
 
   protected isSelectionTool(): boolean {
     const t = this.activeTool();
     return t === 'selectRect' || t === 'selectEllipse' || t === 'lasso' || t === 'wand';
-  }
-
-  protected isShapeTool(): boolean {
-    return this.activeTool() === 'drawShape';
   }
 
   protected setSize(value: string): void {
@@ -83,5 +106,41 @@ export class ToolOptionsComponent {
       return '1 6';
     }
     return 'none';
+  }
+
+  protected setTextFont(font: string): void {
+    this.tools.setTextFont(font);
+  }
+
+  protected setTextSize(value: string): void {
+    this.tools.setTextSize(Number(value));
+  }
+
+  protected toggleTextBold(): void {
+    this.tools.setTextBold(!this.textBold());
+  }
+
+  protected toggleTextItalic(): void {
+    this.tools.setTextItalic(!this.textItalic());
+  }
+
+  protected toggleTextUnderline(): void {
+    this.tools.setTextUnderline(!this.textUnderline());
+  }
+
+  protected setTextAlign(align: TextAlign): void {
+    this.tools.setTextAlign(align);
+  }
+
+  protected setTextOutlineWidth(value: string): void {
+    this.tools.setTextOutlineWidth(Number(value));
+  }
+
+  protected toggleTextFill(): void {
+    this.tools.setTextFill(!this.textFill());
+  }
+
+  protected toggleTextOutline(): void {
+    this.tools.setTextOutline(!this.textOutline());
   }
 }

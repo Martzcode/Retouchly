@@ -71,6 +71,7 @@ export class App {
       event.preventDefault();
       void getCurrentWindow().close();
     } else if (event.key === 'Escape') {
+      this.canvas.textEdit.set(null);
       this.canvas.clearSelection();
     } else if (!this.isTypingTarget(event)) {
       if (mod && key === 'z') {
@@ -126,6 +127,8 @@ export class App {
         this.tools.setTool('moveObject');
       } else if (key === 'u') {
         this.tools.setTool('drawShape');
+      } else if (key === 't') {
+        this.tools.setTool('text');
       }
     } else if (mod && !event.shiftKey && key === 'e') {
       event.preventDefault();
