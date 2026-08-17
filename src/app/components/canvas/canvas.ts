@@ -158,6 +158,21 @@ export class CanvasComponent implements OnDestroy {
     this.compositeToDisplay();
   }
 
+  onDocumentResized(): void {
+    const w = this.layers.width;
+    const h = this.layers.height;
+    this.nativeWidth = w;
+    this.nativeHeight = h;
+    const canvas = this.canvasRef.nativeElement;
+    canvas.width = w;
+    canvas.height = h;
+    this.ctx.imageSmoothingEnabled = false;
+    this.sizeOverlay();
+    this.applyZoom();
+    this.showSelection(null);
+    this.compositeToDisplay();
+  }
+
   loadImage(dataUrl: string, width: number, height: number): void {
     const img = new Image();
     img.onload = () => {
@@ -196,6 +211,34 @@ export class CanvasComponent implements OnDestroy {
   clearSelection(): void {
     this.showSelection(null);
     this.cancelPolygon();
+  }
+
+  cropToSelection(): void {
+    if (!this.hasDocument || !this.selection) {
+      return;
+    }
+    const b = this.selectionBounds(this.selection);
+    if (!b) {
+      return;
+    }
+    this.pushUndoSnapshot();
+    const w = this.nativeWidth;
+    const h = this.nativeHeight;
+    const layers = this.layers.layers();
+    for (const layer of layers) {
+      const img = layer.ctx.getImageData(b.x, b.y, b.w, b.h);
+      layer.canvas.width = b.w;
+      layer.canvas.height = b.h;
+      layer.ctx.putImageData(img, 0, 0);
+    }
+    this.nativeWidth = b.w;
+    this.nativeHeight = b.h;
+    this.layers['_width'] = b.w;
+    this.layers['_height'] = b.h;
+    this.showSelection(null);
+    this.newDocument(b.w, b.h);
+    this.compositeToDisplay();
+    this.dirty.emit();
   }
 
   cancelPolygon(): void {
@@ -378,6 +421,7 @@ export class CanvasComponent implements OnDestroy {
     this.redoStack.push(this.layers.snapshotAll());
     const snapshots = this.undoStack.pop()!;
     this.layers.restoreFromSnapshots(snapshots);
+    this.syncCanvasSize();
     this.compositeToDisplay();
     this.canUndo.set(this.undoStack.length > 0);
     this.canRedo.set(true);
@@ -391,10 +435,26 @@ export class CanvasComponent implements OnDestroy {
     this.undoStack.push(this.layers.snapshotAll());
     const snapshots = this.redoStack.pop()!;
     this.layers.restoreFromSnapshots(snapshots);
+    this.syncCanvasSize();
     this.compositeToDisplay();
     this.canUndo.set(true);
     this.canRedo.set(this.redoStack.length > 0);
     this.dirty.emit();
+  }
+
+  private syncCanvasSize(): void {
+    const w = this.layers.width;
+    const h = this.layers.height;
+    if (w !== this.nativeWidth || h !== this.nativeHeight) {
+      this.nativeWidth = w;
+      this.nativeHeight = h;
+      const canvas = this.canvasRef.nativeElement;
+      canvas.width = w;
+      canvas.height = h;
+      this.ctx.imageSmoothingEnabled = false;
+      this.sizeOverlay();
+      this.applyZoom();
+    }
   }
 
   protected tool(): string {

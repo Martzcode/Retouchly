@@ -1,0 +1,56 @@
+@if (open) {
+  <div class="dialog-backdrop" (click)="cancel()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      <h3 class="dialog-title">Redimensionner le canevas</h3>
+      <div class="dialog-row">
+        <label class="dialog-label">
+          Largeur (px)
+          <input class="dialog-input" type="number" min="1" [(ngModel)]="width" />
+        </label>
+        <label class="dialog-label">
+          Hauteur (px)
+          <input class="dialog-input" type="number" min="1" [(ngModel)]="height" />
+        </label>
+      </div>
+      <div class="anchor-section">
+        <span class="anchor-label">Ancrage</span>
+        <div class="anchor-grid">
+          <button class="anchor-btn" [class.active]="anchorX === 0 && anchorY === 0" (click)="setAnchor(0, 0)">
+            <svg viewBox="0 0 12 12" width="12" height="12"><circle cx="3" cy="3" r="2" fill="currentColor" /></svg>
+          </button>
+          <button class="anchor-btn" [class.active]="anchorX === 0.5 && anchorY === 0" (click)="setAnchor(0.5, 0)">
+            <svg viewBox="0 0 12 12" width="12" height="12"><circle cx="6" cy="3" r="2" fill="currentColor" /></svg>
+          </button>
+          <button class="anchor-btn" [class.active]="anchorX === 1 && anchorY === 0" (click)="setAnchor(1, 0)">
+            <svg viewBox="0 0 12 12" width="12" height="12"><circle cx="9" cy="3" r="2" fill="currentColor" /></svg>
+          </button>
+          <button class="anchor-btn" [class.active]="anchorX === 0 && anchorY === 0.5" (click)="setAnchor(0, 0.5)">
+            <svg viewBox="0 0 12 12" width="12" height="12"><circle cx="3" cy="6" r="2" fill="currentColor" /></svg>
+          </button>
+          <button class="anchor-btn" [class.active]="anchorX === 0.5 && anchorY === 0.5" (click)="setAnchor(0.5, 0.5)">
+            <svg viewBox="0 0 12 12" width="12" height="12"><circle cx="6" cy="6" r="2" fill="currentColor" /></svg>
+          </button>
+          <button class="anchor-btn" [class.active]="anchorX === 1 && anchorY === 0.5" (click)="setAnchor(1, 0.5)">
+            <svg viewBox="0 0 12 12" width="12" height="12"><circle cx="9" cy="6" r="2" fill="currentColor" /></svg>
+          </button>
+          <button class="anchor-btn" [class.active]="anchorX === 0 && anchorY === 1" (click)="setAnchor(0, 1)">
+            <svg viewBox="0 0 12 12" width="12" height="12"><circle cx="3" cy="9" r="2" fill="currentColor" /></svg>
+          </button>
+          <button class="anchor-btn" [class.active]="anchorX === 0.5 && anchorY === 1" (click)="setAnchor(0.5, 1)">
+            <svg viewBox="0 0 12 12" width="12" height="12"><circle cx="6" cy="9" r="2" fill="currentColor" /></svg>
+          </button>
+          <button class="anchor-btn" [class.active]="anchorX === 1 && anchorY === 1" (click)="setAnchor(1, 1)">
+            <svg viewBox="0 0 12 12" width="12" height="12"><circle cx="9" cy="9" r="2" fill="currentColor" /></svg>
+          </button>
+        </div>
+      </div>
+      <div class="dialog-actions">
+        <span></span>
+        <div class="dialog-actions-right">
+          <button class="dialog-btn" (click)="cancel()">Annuler</button>
+          <button class="dialog-btn primary" (click)="confirm()">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

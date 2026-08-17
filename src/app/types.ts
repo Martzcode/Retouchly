@@ -104,5 +104,7 @@ export interface LayerSnapshot {
   blendMode: BlendMode;
   rotation: number;
   scale: number;
+  width: number;
+  height: number;
   pixels: ImageData;
 }

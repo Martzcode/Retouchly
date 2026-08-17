@@ -48,4 +48,20 @@
     (closed)="onAdjClose()"
     (previewChange)="canvas.compositeToDisplay()"
   ></app-adjustment-dialog>
+  <app-effects-dialog
+    [type]="fxType()"
+    [open]="showFxDialog()"
+    (closed)="onFxClose()"
+    (previewChange)="canvas.compositeToDisplay()"
+  ></app-effects-dialog>
+  <app-resize-image-dialog
+    [open]="showResizeImageDialog()"
+    (confirmed)="onResizeImageConfirm($event)"
+    (cancelled)="onResizeImageCancel()"
+  ></app-resize-image-dialog>
+  <app-resize-canvas-dialog
+    [open]="showResizeCanvasDialog()"
+    (confirmed)="onResizeCanvasConfirm($event)"
+    (cancelled)="onResizeCanvasCancel()"
+  ></app-resize-canvas-dialog>
 </div>

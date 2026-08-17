@@ -3,8 +3,11 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { AdjustmentDialogComponent, AdjustmentType } from './components/adjustment-dialog/adjustment-dialog';
 import { CanvasComponent } from './components/canvas/canvas';
 import { ColorsPanelComponent } from './components/colors-panel/colors-panel';
+import { EffectsDialogComponent, EffectType } from './components/effects-dialog/effects-dialog';
 import { LayersPanelComponent } from './components/layers-panel/layers-panel';
 import { NewImageDialogComponent } from './components/new-image-dialog/new-image-dialog';
+import { ResizeCanvasDialogComponent } from './components/resize-canvas-dialog/resize-canvas-dialog';
+import { ResizeImageDialogComponent } from './components/resize-image-dialog/resize-image-dialog';
 import { StatusBarComponent } from './components/status-bar/status-bar';
 import { TitleBarComponent } from './components/title-bar/title-bar';
 import { ToolBarComponent } from './components/tool-bar/tool-bar';
@@ -13,6 +16,7 @@ import { ToolsPaletteComponent } from './components/tools-palette/tools-palette'
 import { AdjustmentsService } from './services/adjustments.service';
 import { ColorsService } from './services/colors.service';
 import { DocumentService } from './services/document.service';
+import { EffectsService } from './services/effects.service';
 import { LayerService } from './services/layer.service';
 import { ToolService, TOOL_LABELS } from './services/tool.service';
 import { CommandEvent } from './types';
@@ -28,6 +32,9 @@ import { CommandEvent } from './types';
     LayersPanelComponent,
     NewImageDialogComponent,
     AdjustmentDialogComponent,
+    EffectsDialogComponent,
+    ResizeImageDialogComponent,
+    ResizeCanvasDialogComponent,
     ColorsPanelComponent,
     StatusBarComponent,
   ],
@@ -40,6 +47,7 @@ export class App {
   private readonly colors = inject(ColorsService);
   protected readonly layers = inject(LayerService);
   protected readonly adjustments = inject(AdjustmentsService);
+  private readonly effects = inject(EffectsService);
 
   @ViewChild(CanvasComponent, { static: true }) canvas!: CanvasComponent;
   @ViewChild(LayersPanelComponent) layersPanel!: LayersPanelComponent;
@@ -49,6 +57,10 @@ export class App {
   protected showNewDialog = signal(false);
   protected showAdjDialog = signal(false);
   protected adjType = signal<AdjustmentType>('brightnessContrast');
+  protected showFxDialog = signal(false);
+  protected fxType = signal<EffectType>('boxBlur');
+  protected showResizeImageDialog = signal(false);
+  protected showResizeCanvasDialog = signal(false);
 
   @HostListener('window:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
@@ -284,6 +296,70 @@ export class App {
       case 'adjThreshold':
         this.openAdjustment('threshold');
         break;
+      case 'fxBlur':
+        this.openEffect('boxBlur');
+        break;
+      case 'fxMotion':
+        this.openEffect('motionBlur');
+        break;
+      case 'fxPixelate':
+        this.openEffect('pixelate');
+        break;
+      case 'fxSharpen':
+        this.canvas.pushUndoSnapshot();
+        this.effects.sharpen();
+        this.canvas.compositeToDisplay();
+        break;
+      case 'fxEmboss':
+        this.canvas.pushUndoSnapshot();
+        this.effects.emboss();
+        this.canvas.compositeToDisplay();
+        break;
+      case 'fxEdge':
+        this.canvas.pushUndoSnapshot();
+        this.effects.edgeDetect();
+        this.canvas.compositeToDisplay();
+        break;
+      case 'fxNoise':
+        this.openEffect('noise');
+        break;
+      case 'fxVignette':
+        this.openEffect('vignette');
+        break;
+      case 'imgResize':
+        this.showResizeImageDialog.set(true);
+        break;
+      case 'imgCanvas':
+        this.showResizeCanvasDialog.set(true);
+        break;
+      case 'imgRotateCW':
+        this.canvas.pushUndoSnapshot();
+        this.layers.rotateAll(90);
+        this.canvas.onDocumentResized();
+        break;
+      case 'imgRotateCCW':
+        this.canvas.pushUndoSnapshot();
+        this.layers.rotateAll(270);
+        this.canvas.onDocumentResized();
+        break;
+      case 'imgRotate180':
+        this.canvas.pushUndoSnapshot();
+        this.layers.rotateAll(180);
+        this.canvas.onDocumentResized();
+        break;
+      case 'imgFlipH':
+        this.canvas.pushUndoSnapshot();
+        this.layers.flipAll('horizontal');
+        this.canvas.compositeToDisplay();
+        break;
+      case 'imgFlipV':
+        this.canvas.pushUndoSnapshot();
+        this.layers.flipAll('vertical');
+        this.canvas.compositeToDisplay();
+        break;
+      case 'imgCrop':
+        this.canvas.cropToSelection();
+        break;
     }
   }
 
@@ -311,6 +387,39 @@ export class App {
   protected onAdjClose(): void {
     this.showAdjDialog.set(false);
     this.canvas.compositeToDisplay();
+  }
+
+  protected openEffect(type: EffectType): void {
+    this.canvas.pushUndoSnapshot();
+    this.fxType.set(type);
+    this.showFxDialog.set(true);
+  }
+
+  protected onFxClose(): void {
+    this.showFxDialog.set(false);
+    this.canvas.compositeToDisplay();
+  }
+
+  protected onResizeImageConfirm(event: { width: number; height: number }): void {
+    this.showResizeImageDialog.set(false);
+    this.canvas.pushUndoSnapshot();
+    this.layers.resizeImage(event.width, event.height);
+    this.canvas.onDocumentResized();
+  }
+
+  protected onResizeImageCancel(): void {
+    this.showResizeImageDialog.set(false);
+  }
+
+  protected onResizeCanvasConfirm(event: { width: number; height: number; anchorX: number; anchorY: number }): void {
+    this.showResizeCanvasDialog.set(false);
+    this.canvas.pushUndoSnapshot();
+    this.layers.resizeCanvas(event.width, event.height, event.anchorX, event.anchorY);
+    this.canvas.onDocumentResized();
+  }
+
+  protected onResizeCanvasCancel(): void {
+    this.showResizeCanvasDialog.set(false);
   }
 
   protected async onOpen(): Promise<void> {

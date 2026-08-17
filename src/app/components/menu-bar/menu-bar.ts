@@ -68,7 +68,19 @@ export class MenuBarComponent {
     },
     {
       label: 'Image',
-      items: [{ id: 'resize', label: 'Redimensionner…', disabled: true }],
+      items: [
+        { id: 'imgResize', label: 'Redimensionner l\'image…' },
+        { id: 'imgCanvas', label: 'Redimensionner le canevas…' },
+        { id: 'imgSep-1', label: '-' },
+        { id: 'imgRotateCW', label: 'Rotation 90° à droite' },
+        { id: 'imgRotateCCW', label: 'Rotation 90° à gauche' },
+        { id: 'imgRotate180', label: 'Rotation 180°' },
+        { id: 'imgSep-2', label: '-' },
+        { id: 'imgFlipH', label: 'Symétrie horizontale' },
+        { id: 'imgFlipV', label: 'Symétrie verticale' },
+        { id: 'imgSep-3', label: '-' },
+        { id: 'imgCrop', label: 'Recadrer sur la sélection' },
+      ],
     },
     {
       label: 'Calques',
@@ -102,7 +114,18 @@ export class MenuBarComponent {
     },
     {
       label: 'Effets',
-      items: [{ id: 'blur', label: 'Flou gaussien…', disabled: true }],
+      items: [
+        { id: 'fxBlur', label: 'Flou gaussien…' },
+        { id: 'fxMotion', label: 'Flou de mouvement…' },
+        { id: 'fxSep-1', label: '-' },
+        { id: 'fxPixelate', label: 'Pixelate…' },
+        { id: 'fxSharpen', label: 'Netteté' },
+        { id: 'fxEmboss', label: 'Relief' },
+        { id: 'fxEdge', label: 'Détection de contours' },
+        { id: 'fxSep-2', label: '-' },
+        { id: 'fxNoise', label: 'Bruit…' },
+        { id: 'fxVignette', label: 'Vignette…' },
+      ],
     },
     {
       label: 'Fenêtre',
@@ -144,7 +167,7 @@ export class MenuBarComponent {
     if (item.id === 'redo') {
       return !this.redoEnabled;
     }
-    if (item.id.startsWith('sep-') || item.id.startsWith('adjSep-')) {
+    if (item.id.startsWith('sep-') || item.id.startsWith('adjSep-') || item.id.startsWith('fxSep-')) {
       return false;
     }
     if (!this.layersEnabled) {
@@ -159,7 +182,18 @@ export class MenuBarComponent {
         'adjInvert', 'adjDesaturate', 'adjSepia',
         'adjPosterize', 'adjThreshold',
       ];
-      if (layerIds.includes(item.id) || adjIds.includes(item.id)) {
+      const fxIds = [
+        'fxBlur', 'fxMotion', 'fxPixelate',
+        'fxSharpen', 'fxEmboss', 'fxEdge',
+        'fxNoise', 'fxVignette',
+      ];
+      const imgIds = [
+        'imgResize', 'imgCanvas',
+        'imgRotateCW', 'imgRotateCCW', 'imgRotate180',
+        'imgFlipH', 'imgFlipV',
+        'imgCrop',
+      ];
+      if (layerIds.includes(item.id) || adjIds.includes(item.id) || fxIds.includes(item.id) || imgIds.includes(item.id)) {
         return true;
       }
     }

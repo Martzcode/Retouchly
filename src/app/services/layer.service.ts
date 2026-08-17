@@ -311,14 +311,21 @@ export class LayerService {
       blendMode: l.blendMode,
       rotation: l.rotation,
       scale: l.scale,
+      width: this._width,
+      height: this._height,
       pixels: l.ctx.getImageData(0, 0, this._width, this._height),
     }));
   }
 
   restoreFromSnapshots(snapshots: LayerSnapshot[]): void {
+    if (snapshots.length === 0) {
+      return;
+    }
+    const snapW = snapshots[0].width;
+    const snapH = snapshots[0].height;
     const layers: Layer[] = snapshots.map((snap) => {
       const existing = this.getLayerById(snap.id);
-      if (existing) {
+      if (existing && existing.canvas.width === snap.width && existing.canvas.height === snap.height) {
         existing.ctx.putImageData(snap.pixels, 0, 0);
         return {
           ...existing,
@@ -331,7 +338,7 @@ export class LayerService {
           scale: snap.scale,
         };
       }
-      const { canvas, ctx } = createBuffer(this._width, this._height);
+      const { canvas, ctx } = createBuffer(snap.width, snap.height);
       ctx.putImageData(snap.pixels, 0, 0);
       return {
         id: snap.id,
@@ -347,6 +354,8 @@ export class LayerService {
         _basePixels: null,
       };
     });
+    this._width = snapW;
+    this._height = snapH;
     this._layers.set(layers);
     if (layers.length > 0 && !layers.find((l) => l.id === this._activeLayerId())) {
       this._activeLayerId.set(layers[layers.length - 1].id);
@@ -440,6 +449,126 @@ export class LayerService {
 
     layer.ctx.clearRect(0, 0, this._width, this._height);
     layer.ctx.drawImage(out, 0, 0);
+  }
+
+  /** Tourne toutes les calques de 90/180/270° (change les dimensions du document). */
+  rotateAll(degrees: 90 | 180 | 270): void {
+    const w = this._width;
+    const h = this._height;
+    const newW = degrees === 180 ? w : h;
+    const newH = degrees === 180 ? h : w;
+
+    const list = this._layers();
+    for (const layer of list) {
+      const { canvas: tmp, ctx: tmpCtx } = createBuffer(newW, newH);
+
+      if (degrees === 90) {
+        // 90° CW: (x,y) → (h-y, x)
+        tmpCtx.translate(newW, 0);
+        tmpCtx.rotate(Math.PI / 2);
+        tmpCtx.drawImage(layer.canvas, 0, 0);
+      } else if (degrees === 270) {
+        // 270° CW: (x,y) → (y, w-x)
+        tmpCtx.translate(0, newH);
+        tmpCtx.rotate(-Math.PI / 2);
+        tmpCtx.drawImage(layer.canvas, 0, 0);
+      } else {
+        // 180°: (x,y) → (w-x, h-y)
+        tmpCtx.translate(newW, newH);
+        tmpCtx.rotate(Math.PI);
+        tmpCtx.drawImage(layer.canvas, 0, 0);
+      }
+
+      layer.canvas.width = newW;
+      layer.canvas.height = newH;
+      layer.ctx.imageSmoothingEnabled = false;
+      layer.ctx.drawImage(tmp, 0, 0);
+      if (layer._basePixels) {
+        layer._basePixels = layer.ctx.getImageData(0, 0, newW, newH);
+      }
+    }
+    this._width = newW;
+    this._height = newH;
+    this._layers.update((list) => [...list]);
+  }
+
+  /** Retourne tous les calques horizontalement ou verticalement. */
+  flipAll(direction: 'horizontal' | 'vertical'): void {
+    const w = this._width;
+    const h = this._height;
+    const list = this._layers();
+    for (const layer of list) {
+      const { canvas: tmp, ctx: tmpCtx } = createBuffer(w, h);
+      if (direction === 'horizontal') {
+        tmpCtx.translate(w, 0);
+        tmpCtx.scale(-1, 1);
+      } else {
+        tmpCtx.translate(0, h);
+        tmpCtx.scale(1, -1);
+      }
+      tmpCtx.drawImage(layer.canvas, 0, 0);
+      layer.ctx.clearRect(0, 0, w, h);
+      layer.ctx.drawImage(tmp, 0, 0);
+      if (layer._basePixels) {
+        layer._basePixels = layer.ctx.getImageData(0, 0, w, h);
+      }
+    }
+    this._layers.update((list) => [...list]);
+  }
+
+  /** Redimensionne l'image (tous les calques). */
+  resizeImage(newW: number, newH: number): void {
+    if (newW < 1 || newH < 1) {
+      return;
+    }
+    const oldW = this._width;
+    const oldH = this._height;
+    const list = this._layers();
+    for (const layer of list) {
+      const { canvas: tmp, ctx: tmpCtx } = createBuffer(newW, newH);
+      tmpCtx.imageSmoothingEnabled = false;
+      tmpCtx.drawImage(layer.canvas, 0, 0, oldW, oldH, 0, 0, newW, newH);
+      layer.canvas.width = newW;
+      layer.canvas.height = newH;
+      layer.ctx.imageSmoothingEnabled = false;
+      layer.ctx.drawImage(tmp, 0, 0);
+      if (layer._basePixels) {
+        layer._basePixels = layer.ctx.getImageData(0, 0, newW, newH);
+      }
+    }
+    this._width = newW;
+    this._height = newH;
+    this._layers.update((list) => [...list]);
+  }
+
+  /**
+   * Redimensionne le canevas (tous les calques) sans étirer le contenu.
+   * anchorX/anchorY ∈ {0, 0.5, 1} (gauche/centre/droite, haut/milieu/bas).
+   */
+  resizeCanvas(newW: number, newH: number, anchorX: number, anchorY: number): void {
+    if (newW < 1 || newH < 1) {
+      return;
+    }
+    const oldW = this._width;
+    const oldH = this._height;
+    const dx = Math.round((newW - oldW) * anchorX);
+    const dy = Math.round((newH - oldH) * anchorY);
+    const list = this._layers();
+    for (const layer of list) {
+      const { canvas: tmp, ctx: tmpCtx } = createBuffer(oldW, oldH);
+      tmpCtx.drawImage(layer.canvas, 0, 0);
+      layer.canvas.width = newW;
+      layer.canvas.height = newH;
+      layer.ctx.imageSmoothingEnabled = false;
+      layer.ctx.clearRect(0, 0, newW, newH);
+      layer.ctx.drawImage(tmp, dx, dy);
+      if (layer._basePixels) {
+        layer._basePixels = layer.ctx.getImageData(0, 0, newW, newH);
+      }
+    }
+    this._width = newW;
+    this._height = newH;
+    this._layers.update((list) => [...list]);
   }
 
   private nextLayerName(): string {
