@@ -15,3 +15,12 @@
   display: flex;
   overflow: hidden;
 }
+
+.right-panels {
+  display: flex;
+  flex-direction: column;
+  width: 236px;
+  flex: none;
+  border-left: 1px solid var(--border);
+  overflow: hidden;
+}

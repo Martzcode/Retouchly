@@ -1,0 +1,439 @@
+import { Injectable, signal } from '@angular/core';
+import { BlendMode, LayerSnapshot } from '../types';
+
+export interface Layer {
+  id: string;
+  name: string;
+  visible: boolean;
+  locked: boolean;
+  opacity: number;
+  blendMode: BlendMode;
+  rotation: number;
+  scale: number;
+  canvas: HTMLCanvasElement;
+  ctx: CanvasRenderingContext2D;
+}
+
+let layerIdCounter = 0;
+
+function makeId(): string {
+  return `layer-${++layerIdCounter}-${Date.now()}`;
+}
+
+function createBuffer(w: number, h: number): { canvas: HTMLCanvasElement; ctx: CanvasRenderingContext2D } {
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d')!;
+  ctx.imageSmoothingEnabled = false;
+  return { canvas, ctx };
+}
+
+@Injectable({ providedIn: 'root' })
+export class LayerService {
+  private _layers = signal<Layer[]>([]);
+  private _activeLayerId = signal('');
+  private _width = 0;
+  private _height = 0;
+
+  readonly layers = this._layers.asReadonly();
+  readonly activeLayerId = this._activeLayerId.asReadonly();
+
+  get width(): number {
+    return this._width;
+  }
+
+  get height(): number {
+    return this._height;
+  }
+
+  reset(w: number, h: number): void {
+    this._width = w;
+    this._height = h;
+    this._layers.set([]);
+    this._activeLayerId.set('');
+  }
+
+  addLayer(name?: string): Layer {
+    const id = makeId();
+    const { canvas, ctx } = createBuffer(this._width, this._height);
+    const layer: Layer = {
+      id,
+      name: name ?? this.nextLayerName(),
+      visible: true,
+      locked: false,
+      opacity: 100,
+      blendMode: 'source-over',
+      rotation: 0,
+      scale: 100,
+      canvas,
+      ctx,
+    };
+    const list = this._layers();
+    const activeIdx = list.findIndex((l) => l.id === this._activeLayerId());
+    const insertAt = activeIdx >= 0 ? activeIdx + 1 : list.length;
+    const next = [...list];
+    next.splice(insertAt, 0, layer);
+    this._layers.set(next);
+    this._activeLayerId.set(id);
+    return layer;
+  }
+
+  removeLayer(id: string): void {
+    const list = this._layers();
+    if (list.length <= 1) {
+      return;
+    }
+    const idx = list.findIndex((l) => l.id === id);
+    if (idx < 0) {
+      return;
+    }
+    const next = [...list];
+    next.splice(idx, 1);
+    this._layers.set(next);
+    if (this._activeLayerId() === id) {
+      const newIdx = Math.min(idx, next.length - 1);
+      this._activeLayerId.set(next[newIdx].id);
+    }
+  }
+
+  duplicateLayer(id: string): Layer | null {
+    const list = this._layers();
+    const idx = list.findIndex((l) => l.id === id);
+    if (idx < 0) {
+      return null;
+    }
+    const src = list[idx];
+    const newId = makeId();
+    const { canvas, ctx } = createBuffer(this._width, this._height);
+    ctx.drawImage(src.canvas, 0, 0);
+    const dup: Layer = {
+      id: newId,
+      name: src.name + ' copie',
+      visible: src.visible,
+      locked: false,
+      opacity: src.opacity,
+      blendMode: src.blendMode,
+      rotation: src.rotation,
+      scale: src.scale,
+      canvas,
+      ctx,
+    };
+    const next = [...list];
+    next.splice(idx + 1, 0, dup);
+    this._layers.set(next);
+    this._activeLayerId.set(newId);
+    return dup;
+  }
+
+  moveLayerUp(id: string): void {
+    const list = this._layers();
+    const idx = list.findIndex((l) => l.id === id);
+    if (idx < 0 || idx >= list.length - 1) {
+      return;
+    }
+    const next = [...list];
+    [next[idx], next[idx + 1]] = [next[idx + 1], next[idx]];
+    this._layers.set(next);
+  }
+
+  moveLayerDown(id: string): void {
+    const list = this._layers();
+    const idx = list.findIndex((l) => l.id === id);
+    if (idx <= 0) {
+      return;
+    }
+    const next = [...list];
+    [next[idx], next[idx - 1]] = [next[idx - 1], next[idx]];
+    this._layers.set(next);
+  }
+
+  reorderLayer(fromIndex: number, toIndex: number): void {
+    const list = this._layers();
+    if (fromIndex < 0 || fromIndex >= list.length || toIndex < 0 || toIndex >= list.length) {
+      return;
+    }
+    const next = [...list];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    this._layers.set(next);
+  }
+
+  mergeDown(id: string): void {
+    const list = this._layers();
+    const idx = list.findIndex((l) => l.id === id);
+    if (idx <= 0) {
+      return;
+    }
+    const top = list[idx];
+    const bottom = list[idx - 1];
+    bottom.ctx.save();
+    bottom.ctx.globalAlpha = top.opacity / 100;
+    bottom.ctx.globalCompositeOperation = top.blendMode;
+    bottom.ctx.drawImage(top.canvas, 0, 0);
+    bottom.ctx.restore();
+    const next = [...list];
+    next.splice(idx, 1);
+    this._layers.set(next);
+    this._activeLayerId.set(bottom.id);
+  }
+
+  flatten(): void {
+    const list = this._layers();
+    if (list.length <= 1) {
+      return;
+    }
+    const { canvas, ctx } = createBuffer(this._width, this._height);
+    for (const layer of list) {
+      if (!layer.visible) {
+        continue;
+      }
+      ctx.save();
+      ctx.globalAlpha = layer.opacity / 100;
+      ctx.globalCompositeOperation = layer.blendMode;
+      ctx.drawImage(layer.canvas, 0, 0);
+      ctx.restore();
+    }
+    const flat: Layer = {
+      id: makeId(),
+      name: 'Arrière-plan',
+      visible: true,
+      locked: false,
+      opacity: 100,
+      blendMode: 'source-over',
+      rotation: 0,
+      scale: 100,
+      canvas,
+      ctx,
+    };
+    this._layers.set([flat]);
+    this._activeLayerId.set(flat.id);
+  }
+
+  setActive(id: string): void {
+    this._activeLayerId.set(id);
+  }
+
+  setVisibility(id: string, visible: boolean): void {
+    this._layers.update((list) =>
+      list.map((l) => (l.id === id ? { ...l, visible } : l)),
+    );
+  }
+
+  setLocked(id: string, locked: boolean): void {
+    this._layers.update((list) =>
+      list.map((l) => (l.id === id ? { ...l, locked } : l)),
+    );
+  }
+
+  setOpacity(id: string, opacity: number): void {
+    this._layers.update((list) =>
+      list.map((l) => (l.id === id ? { ...l, opacity: Math.max(0, Math.min(100, opacity)) } : l)),
+    );
+  }
+
+  setBlendMode(id: string, mode: BlendMode): void {
+    this._layers.update((list) =>
+      list.map((l) => (l.id === id ? { ...l, blendMode: mode } : l)),
+    );
+  }
+
+  renameLayer(id: string, name: string): void {
+    this._layers.update((list) =>
+      list.map((l) => (l.id === id ? { ...l, name } : l)),
+    );
+  }
+
+  getActiveLayer(): Layer | null {
+    const list = this._layers();
+    return list.find((l) => l.id === this._activeLayerId()) ?? null;
+  }
+
+  getLayerById(id: string): Layer | null {
+    return this._layers().find((l) => l.id === id) ?? null;
+  }
+
+  composite(ctx: CanvasRenderingContext2D): void {
+    ctx.clearRect(0, 0, this._width, this._height);
+    for (const layer of this._layers()) {
+      if (!layer.visible) {
+        continue;
+      }
+      ctx.save();
+      ctx.globalAlpha = layer.opacity / 100;
+      ctx.globalCompositeOperation = layer.blendMode;
+      ctx.drawImage(layer.canvas, 0, 0);
+      ctx.restore();
+    }
+  }
+
+  getThumbnail(id: string, size: number): ImageData | null {
+    const layer = this.getLayerById(id);
+    if (!layer) {
+      return null;
+    }
+    const tmp = document.createElement('canvas');
+    tmp.width = size;
+    tmp.height = size;
+    const ctx = tmp.getContext('2d')!;
+    const scale = Math.min(size / this._width, size / this._height);
+    const dw = this._width * scale;
+    const dh = this._height * scale;
+    const dx = (size - dw) / 2;
+    const dy = (size - dh) / 2;
+    ctx.clearRect(0, 0, size, size);
+    ctx.drawImage(layer.canvas, dx, dy, dw, dh);
+    return ctx.getImageData(0, 0, size, size);
+  }
+
+  snapshotAll(): LayerSnapshot[] {
+    return this._layers().map((l) => ({
+      id: l.id,
+      name: l.name,
+      visible: l.visible,
+      locked: l.locked,
+      opacity: l.opacity,
+      blendMode: l.blendMode,
+      rotation: l.rotation,
+      scale: l.scale,
+      pixels: l.ctx.getImageData(0, 0, this._width, this._height),
+    }));
+  }
+
+  restoreFromSnapshots(snapshots: LayerSnapshot[]): void {
+    const layers: Layer[] = snapshots.map((snap) => {
+      const existing = this.getLayerById(snap.id);
+      if (existing) {
+        existing.ctx.putImageData(snap.pixels, 0, 0);
+        return {
+          ...existing,
+          name: snap.name,
+          visible: snap.visible,
+          locked: snap.locked,
+          opacity: snap.opacity,
+          blendMode: snap.blendMode,
+          rotation: snap.rotation,
+          scale: snap.scale,
+        };
+      }
+      const { canvas, ctx } = createBuffer(this._width, this._height);
+      ctx.putImageData(snap.pixels, 0, 0);
+      return {
+        id: snap.id,
+        name: snap.name,
+        visible: snap.visible,
+        locked: snap.locked,
+        opacity: snap.opacity,
+        blendMode: snap.blendMode,
+        rotation: snap.rotation,
+        scale: snap.scale,
+        canvas,
+        ctx,
+      };
+    });
+    this._layers.set(layers);
+    if (layers.length > 0 && !layers.find((l) => l.id === this._activeLayerId())) {
+      this._activeLayerId.set(layers[layers.length - 1].id);
+    }
+  }
+
+  async importImageAsLayer(dataUrl: string, name?: string): Promise<void> {
+    const img = new Image();
+    await new Promise<void>((resolve) => {
+      img.onload = () => resolve();
+      img.src = dataUrl;
+    });
+    const layer = this.addLayer(name);
+    layer.ctx.drawImage(img, 0, 0, this._width, this._height);
+    this._layers.update((list) => [...list]);
+  }
+
+  transformLayer(id: string, matrix: DOMMatrix): void {
+    const layer = this.getLayerById(id);
+    if (!layer) {
+      return;
+    }
+    const { canvas: tmp, ctx: tmpCtx } = createBuffer(this._width, this._height);
+    tmpCtx.setTransform(matrix);
+    tmpCtx.drawImage(layer.canvas, 0, 0);
+    layer.ctx.clearRect(0, 0, this._width, this._height);
+    layer.ctx.drawImage(tmp, 0, 0);
+    this._layers.update((list) => [...list]);
+  }
+
+  setRotation(id: string, degrees: number): void {
+    const layer = this.getLayerById(id);
+    if (!layer) {
+      return;
+    }
+    const delta = degrees - layer.rotation;
+    if (delta === 0) {
+      return;
+    }
+    const cx = this._width / 2;
+    const cy = this._height / 2;
+    const rad = (delta * Math.PI) / 180;
+    const m = new DOMMatrix()
+      .translateSelf(cx, cy)
+      .rotateSelf(rad)
+      .translateSelf(-cx, -cy);
+    this.transformLayer(id, m);
+    this._layers.update((list) =>
+      list.map((l) => (l.id === id ? { ...l, rotation: degrees } : l)),
+    );
+  }
+
+  setScale(id: string, percent: number): void {
+    const layer = this.getLayerById(id);
+    if (!layer) {
+      return;
+    }
+    const ratio = percent / layer.scale;
+    if (ratio === 1) {
+      return;
+    }
+    const cx = this._width / 2;
+    const cy = this._height / 2;
+    const m = new DOMMatrix()
+      .translateSelf(cx, cy)
+      .scaleSelf(ratio, ratio)
+      .translateSelf(-cx, -cy);
+    this.transformLayer(id, m);
+    this._layers.update((list) =>
+      list.map((l) => (l.id === id ? { ...l, scale: percent } : l)),
+    );
+  }
+
+  resetTransform(id: string): void {
+    const layer = this.getLayerById(id);
+    if (!layer) {
+      return;
+    }
+    if (layer.rotation === 0 && layer.scale === 100) {
+      return;
+    }
+    const cx = this._width / 2;
+    const cy = this._height / 2;
+    const rad = (-layer.rotation * Math.PI) / 180;
+    const invScale = 100 / layer.scale;
+    const m = new DOMMatrix()
+      .translateSelf(cx, cy)
+      .rotateSelf(rad)
+      .scaleSelf(invScale, invScale)
+      .translateSelf(-cx, -cy);
+    this.transformLayer(id, m);
+    this._layers.update((list) =>
+      list.map((l) => (l.id === id ? { ...l, rotation: 0, scale: 100 } : l)),
+    );
+  }
+
+  private nextLayerName(): string {
+    const list = this._layers();
+    const base = 'Calque';
+    let n = 1;
+    while (list.some((l) => l.name === `${base} ${n}`)) {
+      n++;
+    }
+    return `${base} ${n}`;
+  }
+}

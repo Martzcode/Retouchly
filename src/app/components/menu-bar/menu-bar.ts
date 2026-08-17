@@ -71,7 +71,19 @@ export class MenuBarComponent {
     },
     {
       label: 'Calques',
-      items: [{ id: 'addLayer', label: 'Nouveau calque', shortcut: 'Ctrl+Maj+N', disabled: true }],
+      items: [
+        { id: 'addLayer', label: 'Nouveau calque', shortcut: 'Ctrl+Maj+N' },
+        { id: 'duplicateLayer', label: 'Dupliquer le calque' },
+        { id: 'deleteLayer', label: 'Supprimer le calque' },
+        { id: 'sep-cl-1', label: '-' },
+        { id: 'mergeDown', label: 'Fusionner vers le bas', shortcut: 'Ctrl+E' },
+        { id: 'flattenImage', label: "Aplatir l'image", shortcut: 'Ctrl+Maj+F' },
+        { id: 'sep-cl-2', label: '-' },
+        { id: 'moveLayerUp', label: 'Monter le calque' },
+        { id: 'moveLayerDown', label: 'Descendre le calque' },
+        { id: 'sep-cl-3', label: '-' },
+        { id: 'importAsLayer', label: 'Importer une image comme calque…' },
+      ],
     },
     {
       label: 'Ajustements',

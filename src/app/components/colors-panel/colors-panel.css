@@ -1,8 +1,7 @@
 :host {
   display: block;
-  width: 236px;
-  flex: none;
-  border-left: 1px solid var(--border);
+  flex: 1;
+  min-height: 0;
   background: var(--surface);
 }
 

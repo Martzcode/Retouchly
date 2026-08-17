@@ -30,3 +30,71 @@ export type Tool =
   | 'moveObject';
 
 export type SelectionMode = 'replace' | 'add' | 'subtract' | 'intersect' | 'xor';
+
+export type BlendMode =
+  | 'source-over'
+  | 'multiply'
+  | 'screen'
+  | 'overlay'
+  | 'darken'
+  | 'lighten'
+  | 'color-dodge'
+  | 'color-burn'
+  | 'hard-light'
+  | 'soft-light'
+  | 'difference'
+  | 'exclusion'
+  | 'hue'
+  | 'saturation'
+  | 'color'
+  | 'luminosity';
+
+export const BLEND_MODES: BlendMode[] = [
+  'source-over',
+  'multiply',
+  'screen',
+  'overlay',
+  'darken',
+  'lighten',
+  'color-dodge',
+  'color-burn',
+  'hard-light',
+  'soft-light',
+  'difference',
+  'exclusion',
+  'hue',
+  'saturation',
+  'color',
+  'luminosity',
+];
+
+export const BLEND_MODE_LABELS: Record<BlendMode, string> = {
+  'source-over': 'Normal',
+  'multiply': 'Multiplier',
+  'screen': 'Écran',
+  'overlay': 'Incrustation',
+  'darken': 'Lumière tamisée',
+  'lighten': 'Lumière crue',
+  'color-dodge': 'Dodge',
+  'color-burn': 'Burn',
+  'hard-light': 'Lumière dure',
+  'soft-light': 'Lumière douce',
+  'difference': 'Différence',
+  'exclusion': 'Exclusion',
+  'hue': 'Teinte',
+  'saturation': 'Saturation',
+  'color': 'Couleur',
+  'luminosity': 'Luminosité',
+};
+
+export interface LayerSnapshot {
+  id: string;
+  name: string;
+  visible: boolean;
+  locked: boolean;
+  opacity: number;
+  blendMode: BlendMode;
+  rotation: number;
+  scale: number;
+  pixels: ImageData;
+}

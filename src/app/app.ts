@@ -2,6 +2,7 @@ import { Component, HostListener, inject, signal, ViewChild } from '@angular/cor
 import { getCurrentWindow } from '@tauri-apps/api/window';
 import { CanvasComponent } from './components/canvas/canvas';
 import { ColorsPanelComponent } from './components/colors-panel/colors-panel';
+import { LayersPanelComponent } from './components/layers-panel/layers-panel';
 import { StatusBarComponent } from './components/status-bar/status-bar';
 import { TitleBarComponent } from './components/title-bar/title-bar';
 import { ToolBarComponent } from './components/tool-bar/tool-bar';
@@ -9,6 +10,7 @@ import { ToolOptionsComponent } from './components/tool-options/tool-options';
 import { ToolsPaletteComponent } from './components/tools-palette/tools-palette';
 import { ColorsService } from './services/colors.service';
 import { DocumentService } from './services/document.service';
+import { LayerService } from './services/layer.service';
 import { ToolService, TOOL_LABELS } from './services/tool.service';
 import { CommandEvent } from './types';
 
@@ -20,6 +22,7 @@ import { CommandEvent } from './types';
     ToolOptionsComponent,
     ToolsPaletteComponent,
     CanvasComponent,
+    LayersPanelComponent,
     ColorsPanelComponent,
     StatusBarComponent,
   ],
@@ -30,6 +33,7 @@ export class App {
   protected readonly doc = inject(DocumentService);
   private readonly tools = inject(ToolService);
   private readonly colors = inject(ColorsService);
+  protected readonly layers = inject(LayerService);
 
   @ViewChild(CanvasComponent, { static: true }) canvas!: CanvasComponent;
 
@@ -42,7 +46,13 @@ export class App {
     const key = event.key.toLowerCase();
     if (mod && key === 'n') {
       event.preventDefault();
-      this.onNew();
+      if (event.shiftKey) {
+        this.canvas.pushUndoSnapshot();
+        this.layers.addLayer();
+        this.canvas.compositeToDisplay();
+      } else {
+        this.onNew();
+      }
     } else if (mod && key === 'o') {
       event.preventDefault();
       this.onOpen();
@@ -111,6 +121,18 @@ export class App {
       } else if (key === 'm') {
         this.tools.setTool('moveObject');
       }
+    } else if (mod && !event.shiftKey && key === 'e') {
+      event.preventDefault();
+      this.canvas.pushUndoSnapshot();
+      this.layers.mergeDown(this.layers.activeLayerId());
+      this.canvas.compositeToDisplay();
+      this.canvas.dirty.emit();
+    } else if (mod && event.shiftKey && key === 'f') {
+      event.preventDefault();
+      this.canvas.pushUndoSnapshot();
+      this.layers.flatten();
+      this.canvas.compositeToDisplay();
+      this.canvas.dirty.emit();
     }
   }
 
@@ -176,6 +198,50 @@ export class App {
       case 'paste':
         this.canvas.pasteClipboard();
         break;
+      case 'addLayer':
+        this.canvas.pushUndoSnapshot();
+        this.layers.addLayer();
+        this.canvas.compositeToDisplay();
+        break;
+      case 'duplicateLayer':
+        this.canvas.pushUndoSnapshot();
+        this.layers.duplicateLayer(this.layers.activeLayerId());
+        this.canvas.compositeToDisplay();
+        break;
+      case 'deleteLayer':
+        this.canvas.pushUndoSnapshot();
+        this.layers.removeLayer(this.layers.activeLayerId());
+        this.canvas.compositeToDisplay();
+        break;
+      case 'mergeDown':
+        this.canvas.pushUndoSnapshot();
+        this.layers.mergeDown(this.layers.activeLayerId());
+        this.canvas.compositeToDisplay();
+        break;
+      case 'flattenImage':
+        this.canvas.pushUndoSnapshot();
+        this.layers.flatten();
+        this.canvas.compositeToDisplay();
+        break;
+      case 'moveLayerUp':
+        this.canvas.pushUndoSnapshot();
+        this.layers.moveLayerUp(this.layers.activeLayerId());
+        this.canvas.compositeToDisplay();
+        break;
+      case 'moveLayerDown':
+        this.canvas.pushUndoSnapshot();
+        this.layers.moveLayerDown(this.layers.activeLayerId());
+        this.canvas.compositeToDisplay();
+        break;
+      case 'reorderLayer':
+        this.canvas.pushUndoSnapshot();
+        break;
+      case 'transformLayer':
+        this.canvas.pushUndoSnapshot();
+        break;
+      case 'importAsLayer':
+        this.onImportAsLayer();
+        break;
     }
   }
 
@@ -231,5 +297,39 @@ export class App {
 
   protected onCanvasDirty(): void {
     this.doc.markDirty();
+  }
+
+  protected onLayerOpacityChange(event: { id: string; opacity: number }): void {
+    this.canvas.compositeToDisplay();
+    this.doc.markDirty();
+  }
+
+  private importFileInput?: HTMLInputElement;
+
+  protected onImportAsLayer(): void {
+    if (!this.importFileInput) {
+      this.importFileInput = document.createElement('input');
+      this.importFileInput.type = 'file';
+      this.importFileInput.accept = 'image/*';
+      this.importFileInput.style.display = 'none';
+      document.body.appendChild(this.importFileInput);
+      this.importFileInput.addEventListener('change', () => {
+        const file = this.importFileInput!.files?.[0];
+        if (!file) {
+          return;
+        }
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const dataUrl = reader.result as string;
+          this.canvas.pushUndoSnapshot();
+          await this.layers.importImageAsLayer(dataUrl, file.name);
+          this.canvas.compositeToDisplay();
+          this.doc.markDirty();
+        };
+        reader.readAsDataURL(file);
+        this.importFileInput!.value = '';
+      });
+    }
+    this.importFileInput.click();
   }
 }

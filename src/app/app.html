@@ -19,7 +19,14 @@
       (openRequested)="onOpen()"
       (zoomChange)="onCanvasZoom($event)"
     ></app-canvas>
-    <app-colors-panel></app-colors-panel>
+    <aside class="right-panels">
+      <app-layers-panel
+        (command)="onCommand($event)"
+        (opacityChange)="onLayerOpacityChange($event)"
+        (compositeNeeded)="canvas.compositeToDisplay()"
+      ></app-layers-panel>
+      <app-colors-panel></app-colors-panel>
+    </aside>
   </main>
   <app-status-bar
     [position]="cursorPos"

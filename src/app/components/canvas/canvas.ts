@@ -9,8 +9,9 @@ import {
   signal,
 } from '@angular/core';
 import { ColorsService } from '../../services/colors.service';
+import { LayerService } from '../../services/layer.service';
 import { ToolService } from '../../services/tool.service';
-import { SelectionMode } from '../../types';
+import { LayerSnapshot, SelectionMode } from '../../types';
 
 interface Rect {
   x: number;
@@ -44,6 +45,7 @@ export class CanvasComponent implements OnDestroy {
 
   private readonly tools = inject(ToolService);
   private readonly colors = inject(ColorsService);
+  readonly layers = inject(LayerService);
 
   hasDocument = false;
   readonly zoom = signal(1);
@@ -51,8 +53,8 @@ export class CanvasComponent implements OnDestroy {
   readonly canRedo = signal(false);
 
   private static readonly MAX_UNDO = 50;
-  private undoStack: ImageData[] = [];
-  private redoStack: ImageData[] = [];
+  private undoStack: LayerSnapshot[][] = [];
+  private redoStack: LayerSnapshot[][] = [];
 
   private ctx!: CanvasRenderingContext2D;
   private selCtx!: CanvasRenderingContext2D;
@@ -115,23 +117,31 @@ export class CanvasComponent implements OnDestroy {
 
   newDocument(width: number, height: number): void {
     this.setupCanvas(width, height);
-    this.ctx.fillStyle = '#ffffff';
-    this.ctx.fillRect(0, 0, width, height);
+    const bg = this.layers.getActiveLayer()!;
+    bg.ctx.fillStyle = '#ffffff';
+    bg.ctx.fillRect(0, 0, width, height);
     this.hasDocument = true;
+    this.compositeToDisplay();
   }
 
   loadImage(dataUrl: string, width: number, height: number): void {
     const img = new Image();
     img.onload = () => {
       this.setupCanvas(width, height);
-      this.ctx.drawImage(img, 0, 0, width, height);
+      const bg = this.layers.getActiveLayer()!;
+      bg.ctx.drawImage(img, 0, 0, width, height);
       this.hasDocument = true;
+      this.compositeToDisplay();
     };
     img.src = dataUrl;
   }
 
   exportPngDataUrl(): string {
     return this.canvasRef.nativeElement.toDataURL('image/png');
+  }
+
+  compositeToDisplay(): void {
+    this.layers.composite(this.ctx);
   }
 
   zoomIn(): void {
@@ -175,7 +185,7 @@ export class CanvasComponent implements OnDestroy {
         }
       }
     }
-    const img = this.ctx.getImageData(x, y, w, h);
+    const img = this.layers.getActiveLayer()!.ctx.getImageData(x, y, w, h);
     if (mask) {
       const d = img.data;
       for (let i = 0; i < w * h; i++) {
@@ -193,7 +203,8 @@ export class CanvasComponent implements OnDestroy {
     }
     this.copySelection();
     this.pushUndoSnapshot();
-    const img = this.snapshot();
+    const layer = this.layers.getActiveLayer()!;
+    const img = layer.ctx.getImageData(0, 0, this.nativeWidth, this.nativeHeight);
     const d = img.data;
     if (this.selection) {
       const sel = this.selection;
@@ -208,7 +219,8 @@ export class CanvasComponent implements OnDestroy {
     } else {
       d.fill(0);
     }
-    this.ctx.putImageData(img, 0, 0);
+    layer.ctx.putImageData(img, 0, 0);
+    this.compositeToDisplay();
     this.dirty.emit();
   }
 
@@ -220,7 +232,8 @@ export class CanvasComponent implements OnDestroy {
     this.pushUndoSnapshot();
     const w = this.nativeWidth;
     const h = this.nativeHeight;
-    const img = this.snapshot();
+    const layer = this.layers.getActiveLayer()!;
+    const img = layer.ctx.getImageData(0, 0, w, h);
     const d = img.data;
     const cw = cb.img.width;
     const ch = cb.img.height;
@@ -245,7 +258,7 @@ export class CanvasComponent implements OnDestroy {
         d[di + 3] = cb.img.data[si + 3];
       }
     }
-    this.ctx.putImageData(img, 0, 0);
+    layer.ctx.putImageData(img, 0, 0);
     const sel = this.emptyMask();
     for (let ly = 0; ly < ch; ly++) {
       const gy = cb.y + ly;
@@ -264,6 +277,7 @@ export class CanvasComponent implements OnDestroy {
       }
     }
     this.showSelection(sel);
+    this.compositeToDisplay();
     this.dirty.emit();
   }
 
@@ -315,9 +329,10 @@ export class CanvasComponent implements OnDestroy {
     if (this.undoStack.length === 0) {
       return;
     }
-    this.redoStack.push(this.snapshot());
-    const img = this.undoStack.pop()!;
-    this.ctx.putImageData(img, 0, 0);
+    this.redoStack.push(this.layers.snapshotAll());
+    const snapshots = this.undoStack.pop()!;
+    this.layers.restoreFromSnapshots(snapshots);
+    this.compositeToDisplay();
     this.canUndo.set(this.undoStack.length > 0);
     this.canRedo.set(true);
     this.dirty.emit();
@@ -327,9 +342,10 @@ export class CanvasComponent implements OnDestroy {
     if (this.redoStack.length === 0) {
       return;
     }
-    this.undoStack.push(this.snapshot());
-    const img = this.redoStack.pop()!;
-    this.ctx.putImageData(img, 0, 0);
+    this.undoStack.push(this.layers.snapshotAll());
+    const snapshots = this.redoStack.pop()!;
+    this.layers.restoreFromSnapshots(snapshots);
+    this.compositeToDisplay();
     this.canUndo.set(true);
     this.canRedo.set(this.redoStack.length > 0);
     this.dirty.emit();
@@ -503,9 +519,10 @@ export class CanvasComponent implements OnDestroy {
       return;
     }
     if (tool === 'moveObject') {
+      const layer = this.layers.getActiveLayer()!;
       this.moveObjectState = {
         start: pos,
-        base: this.snapshot(),
+        base: layer.ctx.getImageData(0, 0, this.nativeWidth, this.nativeHeight),
         sel: this.selection.slice(),
         moved: false,
       };
@@ -536,7 +553,8 @@ export class CanvasComponent implements OnDestroy {
     const w = this.nativeWidth;
     const h = this.nativeHeight;
     const src = base.data;
-    const dst = this.ctx.createImageData(w, h);
+    const layer = this.layers.getActiveLayer()!;
+    const dst = layer.ctx.createImageData(w, h);
     const out = dst.data;
     out.set(src);
     for (let y = 0; y < h; y++) {
@@ -572,7 +590,8 @@ export class CanvasComponent implements OnDestroy {
         out[di + 3] = src[si + 3];
       }
     }
-    this.ctx.putImageData(dst, 0, 0);
+    layer.ctx.putImageData(dst, 0, 0);
+    this.compositeToDisplay();
   }
 
   private isInsideSelection(pos: Point): boolean {
@@ -763,7 +782,7 @@ export class CanvasComponent implements OnDestroy {
     if (px < 0 || py < 0 || px >= w || py >= h) {
       return out;
     }
-    const data = this.ctx.getImageData(0, 0, w, h).data;
+    const data = this.layers.getActiveLayer()!.ctx.getImageData(0, 0, w, h).data;
     const t = this.tools.wandTolerance() * 2.55;
     const seed = (py * w + px) * 4;
     const sr = data[seed];
@@ -1001,11 +1020,12 @@ export class CanvasComponent implements OnDestroy {
   }
 
   private snapshot(): ImageData {
-    return this.ctx.getImageData(0, 0, this.nativeWidth, this.nativeHeight);
+    const layer = this.layers.getActiveLayer()!;
+    return layer.ctx.getImageData(0, 0, this.nativeWidth, this.nativeHeight);
   }
 
-  private pushUndoSnapshot(): void {
-    this.undoStack.push(this.snapshot());
+  pushUndoSnapshot(): void {
+    this.undoStack.push(this.layers.snapshotAll());
     if (this.undoStack.length > CanvasComponent.MAX_UNDO) {
       this.undoStack.shift();
     }
@@ -1053,40 +1073,46 @@ export class CanvasComponent implements OnDestroy {
   }
 
   private stampAt(x: number, y: number): void {
-    if (this.tool() === 'eraser') {
-      this.ctx.globalCompositeOperation = 'destination-out';
-      this.stampCircle(x, y);
-      this.ctx.globalCompositeOperation = 'source-over';
-    } else if (this.tool() === 'brush') {
-      this.stampCircle(x, y);
-    } else {
-      this.stampSquare(x, y);
+    const layer = this.layers.getActiveLayer()!;
+    if (layer.locked) {
+      return;
     }
+    const ctx = layer.ctx;
+    if (this.tool() === 'eraser') {
+      ctx.globalCompositeOperation = 'destination-out';
+      this.stampCircle(ctx, x, y);
+      ctx.globalCompositeOperation = 'source-over';
+    } else if (this.tool() === 'brush') {
+      this.stampCircle(ctx, x, y);
+    } else {
+      this.stampSquare(ctx, x, y);
+    }
+    this.compositeToDisplay();
   }
 
-  private stampSquare(x: number, y: number): void {
+  private stampSquare(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const s = Math.max(1, Math.round(this.tools.brushSize()));
-    this.ctx.fillStyle = this.strokeColor();
-    this.ctx.fillRect(Math.round(x - s / 2), Math.round(y - s / 2), s, s);
+    ctx.fillStyle = this.strokeColor();
+    ctx.fillRect(Math.round(x - s / 2), Math.round(y - s / 2), s, s);
   }
 
-  private stampCircle(x: number, y: number): void {
+  private stampCircle(ctx: CanvasRenderingContext2D, x: number, y: number): void {
     const size = Math.max(1, this.tools.brushSize());
     const radius = size / 2;
     const hardness = this.tools.brushHardness();
     const isEraser = this.tool() === 'eraser';
     const inner = (radius * hardness) / 100;
     if (hardness >= 100) {
-      this.ctx.fillStyle = isEraser ? 'rgba(0,0,0,1)' : this.strokeColor();
+      ctx.fillStyle = isEraser ? 'rgba(0,0,0,1)' : this.strokeColor();
     } else {
-      const gradient = this.ctx.createRadialGradient(x, y, inner, x, y, radius);
+      const gradient = ctx.createRadialGradient(x, y, inner, x, y, radius);
       gradient.addColorStop(0, isEraser ? 'rgba(0,0,0,1)' : this.strokeColor());
       gradient.addColorStop(1, isEraser ? 'rgba(0,0,0,0)' : this.strokeColorFaded());
-      this.ctx.fillStyle = gradient;
+      ctx.fillStyle = gradient;
     }
-    this.ctx.beginPath();
-    this.ctx.arc(x, y, radius, 0, Math.PI * 2);
-    this.ctx.fill();
+    ctx.beginPath();
+    ctx.arc(x, y, radius, 0, Math.PI * 2);
+    ctx.fill();
   }
 
   private strokeColor(): string {
@@ -1175,6 +1201,8 @@ export class CanvasComponent implements OnDestroy {
     this.applyZoom();
     this.zoomChange.emit(1);
     this.clearHistory();
+    this.layers.reset(width, height);
+    this.layers.addLayer('Arrière-plan');
   }
 
   private setupTransparentCanvas(width: number, height: number): void {

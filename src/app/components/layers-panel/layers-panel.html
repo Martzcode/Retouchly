@@ -1,0 +1,117 @@
+<div class="layers-panel">
+  <div class="lp-header">Calques</div>
+
+  <div class="lp-list">
+    @for (layer of reversedLayers; track layer.id; let idx = $index) {
+      <div
+        class="lp-row"
+        [class.active]="isActive(layer.id)"
+        [class.drag-over]="dropIndex === idx"
+        [class.dragging]="dragIndex === idx"
+        (click)="setActive(layer.id)"
+        (dblclick)="startRename(layer.id, layer.name)"
+        draggable="true"
+        (dragstart)="onDragStart(idx, $event)"
+        (dragover)="onDragOver(idx, $event)"
+        (dragleave)="onDragLeave()"
+        (drop)="onDrop(idx, $event)"
+        (dragend)="onDragEnd()"
+      >
+        <button
+          class="lp-eye"
+          [class.hidden]="!layer.visible"
+          (click)="toggleVisibility(layer.id, layer.visible); $event.stopPropagation()"
+          title="Visibilité"
+          [textContent]="layer.visible ? '👁' : '—'"
+        ></button>
+
+        <canvas class="lp-thumb" [width]="48" [height]="48"></canvas>
+        <img class="lp-thumb-img" [src]="thumbUrl(layer.id)" width="48" height="48" />
+
+        @if (editingId() === layer.id) {
+          <input
+            class="lp-name-input"
+            [value]="editName()"
+            (input)="onNameInput($event, layer.id)"
+            (keydown)="onNameKeydown($event, layer.id)"
+            (blur)="commitRename(layer.id)"
+            autofocus
+          />
+        } @else {
+          <span class="lp-name">{{ layer.name }}</span>
+        }
+
+        <button
+          class="lp-lock"
+          [class.locked]="layer.locked"
+          (click)="toggleLock(layer.id, layer.locked); $event.stopPropagation()"
+          title="Verrouillage"
+          [textContent]="layer.locked ? '🔒' : '🔓'"
+        ></button>
+      </div>
+    }
+  </div>
+
+  @if (activeLayer(); as active) {
+    <div class="lp-props">
+      <div class="lp-prop-row">
+        <label>Opacité</label>
+        <input
+          type="range"
+          min="0"
+          max="100"
+          [value]="active.opacity"
+          (input)="onOpacityInput($event)"
+        />
+        <span>{{ active.opacity }}%</span>
+      </div>
+      <div class="lp-prop-row">
+        <label>Mode</label>
+        <select [value]="active.blendMode" (change)="onBlendModeChange(active.id, $event)">
+          @for (mode of blendModes; track mode) {
+            <option [value]="mode" [selected]="mode === active.blendMode">{{ blendLabels[mode] }}</option>
+          }
+        </select>
+      </div>
+      <div class="lp-prop-row">
+        <label>Rotation</label>
+        <input
+          type="range"
+          min="-180"
+          max="180"
+          [value]="active.rotation"
+          (change)="onRotationChange(active.id, $event)"
+        />
+        <span>{{ active.rotation }}°</span>
+      </div>
+      <div class="lp-prop-row">
+        <label>Zoom</label>
+        <input
+          type="range"
+          min="10"
+          max="500"
+          [value]="active.scale"
+          (change)="onScaleChange(active.id, $event)"
+        />
+        <span>{{ active.scale }}%</span>
+      </div>
+      <div class="lp-prop-row">
+        <button class="lp-btn-inline" (click)="onResetTransform(active.id)" [disabled]="active.rotation === 0 && active.scale === 100">
+          Réinitialiser transformation
+        </button>
+      </div>
+    </div>
+  }
+
+  <div class="lp-actions">
+    <button class="lp-btn" (click)="onCommand('addLayer')" title="Nouveau calque (Ctrl+Maj+N)">＋</button>
+    <button class="lp-btn" (click)="onCommand('duplicateLayer')" title="Dupliquer">⧉</button>
+    <button class="lp-btn" (click)="onCommand('deleteLayer')" title="Supprimer">🗑</button>
+    <span class="lp-sep"></span>
+    <button class="lp-btn" (click)="onCommand('moveLayerUp')" title="Monter">▲</button>
+    <button class="lp-btn" (click)="onCommand('moveLayerDown')" title="Descendre">▼</button>
+    <span class="lp-sep"></span>
+    <button class="lp-btn" (click)="onCommand('mergeDown')" title="Fusionner vers le bas (Ctrl+E)">⊟</button>
+    <button class="lp-btn" (click)="onCommand('flattenImage')" title="Aplatir (Ctrl+Maj+F)">▤</button>
+  </div>
+</div>
