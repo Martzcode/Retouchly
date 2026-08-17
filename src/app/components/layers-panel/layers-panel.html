@@ -17,17 +17,6 @@
         (drop)="onDrop(idx, $event)"
         (dragend)="onDragEnd()"
       >
-        <button
-          class="lp-eye"
-          [class.hidden]="!layer.visible"
-          (click)="toggleVisibility(layer.id, layer.visible); $event.stopPropagation()"
-          title="Visibilité"
-          [textContent]="layer.visible ? '👁' : '—'"
-        ></button>
-
-        <canvas class="lp-thumb" [width]="48" [height]="48"></canvas>
-        <img class="lp-thumb-img" [src]="thumbUrl(layer.id)" width="48" height="48" />
-
         @if (editingId() === layer.id) {
           <input
             class="lp-name-input"
@@ -40,6 +29,17 @@
         } @else {
           <span class="lp-name">{{ layer.name }}</span>
         }
+
+        <canvas class="lp-thumb" [width]="48" [height]="48"></canvas>
+        <img class="lp-thumb-img" [src]="thumbUrl(layer.id)" width="48" height="48" />
+
+        <button
+          class="lp-eye"
+          [class.hidden]="!layer.visible"
+          (click)="toggleVisibility(layer.id, layer.visible); $event.stopPropagation()"
+          title="Visibilité"
+          [textContent]="layer.visible ? '👁' : '—'"
+        ></button>
 
         <button
           class="lp-lock"
