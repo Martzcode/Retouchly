@@ -547,6 +547,7 @@ export class CanvasComponent implements OnDestroy {
     this.previewResultPath = this.buildSelectionPath(this.translateMask(m.sel, dx, dy));
     this.previewToolPath = null;
     this.renderSelection();
+    this.dirty.emit();
   }
 
   private stampSelected(base: ImageData, mask: Uint8Array, dx: number, dy: number): void {
@@ -1088,6 +1089,7 @@ export class CanvasComponent implements OnDestroy {
       this.stampSquare(ctx, x, y);
     }
     this.compositeToDisplay();
+    this.dirty.emit();
   }
 
   private stampSquare(ctx: CanvasRenderingContext2D, x: number, y: number): void {

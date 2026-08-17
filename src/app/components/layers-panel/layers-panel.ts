@@ -21,6 +21,7 @@ export class LayersPanelComponent {
 
   protected editingId = signal('');
   protected editName = signal('');
+  protected _thumbVersion = signal(0);
   private _dragIndex = -1;
   private _dropIndex = -1;
 
@@ -44,6 +45,7 @@ export class LayersPanelComponent {
   }
 
   thumbUrl(id: string): string {
+    this._thumbVersion();
     if (!this.thumbs.has(id)) {
       this.refreshThumb(id);
     }
@@ -54,6 +56,7 @@ export class LayersPanelComponent {
     for (const l of this.layers.layers()) {
       this.refreshThumb(l.id);
     }
+    this._thumbVersion.update((v) => v + 1);
   }
 
   private refreshThumb(id: string): void {

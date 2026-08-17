@@ -22,5 +22,7 @@
   width: 236px;
   flex: none;
   border-left: 1px solid var(--border);
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--surface);
 }

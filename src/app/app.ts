@@ -36,6 +36,7 @@ export class App {
   protected readonly layers = inject(LayerService);
 
   @ViewChild(CanvasComponent, { static: true }) canvas!: CanvasComponent;
+  @ViewChild(LayersPanelComponent) layersPanel!: LayersPanelComponent;
 
   protected cursorPos = { x: 0, y: 0 };
   protected zoom = signal(1);
@@ -297,6 +298,7 @@ export class App {
 
   protected onCanvasDirty(): void {
     this.doc.markDirty();
+    this.layersPanel?.scheduleThumbRefresh();
   }
 
   protected onLayerOpacityChange(event: { id: string; opacity: number }): void {
