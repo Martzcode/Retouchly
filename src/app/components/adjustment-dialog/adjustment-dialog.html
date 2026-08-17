@@ -1,0 +1,62 @@
+@if (open) {
+  <div class="dialog-backdrop" (click)="cancel()">
+    <div class="dialog" (click)="$event.stopPropagation()">
+      @switch (type) {
+        @case ('brightnessContrast') {
+          <h3 class="dialog-title">Luminosité / Contraste</h3>
+          <label class="dialog-slider">
+            Luminosité
+            <input type="range" min="-100" max="100" [(ngModel)]="params.brightness" (input)="onInput()" />
+            <span class="slider-val">{{ params.brightness }}</span>
+          </label>
+          <label class="dialog-slider">
+            Contraste
+            <input type="range" min="-100" max="100" [(ngModel)]="params.contrast" (input)="onInput()" />
+            <span class="slider-val">{{ params.contrast }}</span>
+          </label>
+        }
+        @case ('hueSaturationLightness') {
+          <h3 class="dialog-title">Teinte / Saturation / Luminosité</h3>
+          <label class="dialog-slider">
+            Teinte (°)
+            <input type="range" min="-180" max="180" [(ngModel)]="params.hue" (input)="onInput()" />
+            <span class="slider-val">{{ params.hue }}°</span>
+          </label>
+          <label class="dialog-slider">
+            Saturation
+            <input type="range" min="0" max="3" step="0.05" [(ngModel)]="params.saturation" (input)="onInput()" />
+            <span class="slider-val">{{ params.saturation | number:'1.1-1' }}</span>
+          </label>
+          <label class="dialog-slider">
+            Luminosité
+            <input type="range" min="0" max="2" step="0.05" [(ngModel)]="params.lightness" (input)="onInput()" />
+            <span class="slider-val">{{ params.lightness | number:'1.1-1' }}</span>
+          </label>
+        }
+        @case ('posterize') {
+          <h3 class="dialog-title">Postériser</h3>
+          <label class="dialog-slider">
+            Niveaux
+            <input type="range" min="2" max="64" [(ngModel)]="params.posterizeLevels" (input)="onInput()" />
+            <span class="slider-val">{{ params.posterizeLevels }}</span>
+          </label>
+        }
+        @case ('threshold') {
+          <h3 class="dialog-title">Seuil</h3>
+          <label class="dialog-slider">
+            Seuil
+            <input type="range" min="0" max="255" [(ngModel)]="params.thresholdCutoff" (input)="onInput()" />
+            <span class="slider-val">{{ params.thresholdCutoff }}</span>
+          </label>
+        }
+      }
+      <div class="dialog-actions">
+        <button class="dialog-btn" (click)="reset()">Réinitialiser</button>
+        <div class="dialog-actions-right">
+          <button class="dialog-btn" (click)="cancel()">Annuler</button>
+          <button class="dialog-btn primary" (click)="confirm()">OK</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

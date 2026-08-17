@@ -1,5 +1,6 @@
 import { Component, HostListener, inject, signal, ViewChild } from '@angular/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { AdjustmentDialogComponent, AdjustmentType } from './components/adjustment-dialog/adjustment-dialog';
 import { CanvasComponent } from './components/canvas/canvas';
 import { ColorsPanelComponent } from './components/colors-panel/colors-panel';
 import { LayersPanelComponent } from './components/layers-panel/layers-panel';
@@ -9,6 +10,7 @@ import { TitleBarComponent } from './components/title-bar/title-bar';
 import { ToolBarComponent } from './components/tool-bar/tool-bar';
 import { ToolOptionsComponent } from './components/tool-options/tool-options';
 import { ToolsPaletteComponent } from './components/tools-palette/tools-palette';
+import { AdjustmentsService } from './services/adjustments.service';
 import { ColorsService } from './services/colors.service';
 import { DocumentService } from './services/document.service';
 import { LayerService } from './services/layer.service';
@@ -25,6 +27,7 @@ import { CommandEvent } from './types';
     CanvasComponent,
     LayersPanelComponent,
     NewImageDialogComponent,
+    AdjustmentDialogComponent,
     ColorsPanelComponent,
     StatusBarComponent,
   ],
@@ -36,6 +39,7 @@ export class App {
   private readonly tools = inject(ToolService);
   private readonly colors = inject(ColorsService);
   protected readonly layers = inject(LayerService);
+  protected readonly adjustments = inject(AdjustmentsService);
 
   @ViewChild(CanvasComponent, { static: true }) canvas!: CanvasComponent;
   @ViewChild(LayersPanelComponent) layersPanel!: LayersPanelComponent;
@@ -43,6 +47,8 @@ export class App {
   protected cursorPos = { x: 0, y: 0 };
   protected zoom = signal(1);
   protected showNewDialog = signal(false);
+  protected showAdjDialog = signal(false);
+  protected adjType = signal<AdjustmentType>('brightnessContrast');
 
   @HostListener('window:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
@@ -251,6 +257,33 @@ export class App {
       case 'importAsLayer':
         this.onImportAsLayer();
         break;
+      case 'adjBrightness':
+        this.openAdjustment('brightnessContrast');
+        break;
+      case 'adjHSL':
+        this.openAdjustment('hueSaturationLightness');
+        break;
+      case 'adjInvert':
+        this.canvas.pushUndoSnapshot();
+        this.adjustments.invert();
+        this.canvas.compositeToDisplay();
+        break;
+      case 'adjDesaturate':
+        this.canvas.pushUndoSnapshot();
+        this.adjustments.desaturate();
+        this.canvas.compositeToDisplay();
+        break;
+      case 'adjSepia':
+        this.canvas.pushUndoSnapshot();
+        this.adjustments.sepia();
+        this.canvas.compositeToDisplay();
+        break;
+      case 'adjPosterize':
+        this.openAdjustment('posterize');
+        break;
+      case 'adjThreshold':
+        this.openAdjustment('threshold');
+        break;
     }
   }
 
@@ -267,6 +300,17 @@ export class App {
 
   protected onNewCancel(): void {
     this.showNewDialog.set(false);
+  }
+
+  protected openAdjustment(type: AdjustmentType): void {
+    this.canvas.pushUndoSnapshot();
+    this.adjType.set(type);
+    this.showAdjDialog.set(true);
+  }
+
+  protected onAdjClose(): void {
+    this.showAdjDialog.set(false);
+    this.canvas.compositeToDisplay();
   }
 
   protected async onOpen(): Promise<void> {

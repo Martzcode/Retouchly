@@ -42,4 +42,10 @@
       (cancel)="onNewCancel()"
     ></app-new-image-dialog>
   }
+  <app-adjustment-dialog
+    [type]="adjType()"
+    [open]="showAdjDialog()"
+    (closed)="onAdjClose()"
+    (previewChange)="canvas.compositeToDisplay()"
+  ></app-adjustment-dialog>
 </div>

@@ -88,7 +88,17 @@ export class MenuBarComponent {
     },
     {
       label: 'Ajustements',
-      items: [{ id: 'brightness', label: 'Luminosité / Contraste…', disabled: true }],
+      items: [
+        { id: 'adjBrightness', label: 'Luminosité / Contraste…' },
+        { id: 'adjHSL', label: 'Teinte / Saturation / Luminosité…' },
+        { id: 'adjSep-1', label: '-' },
+        { id: 'adjInvert', label: 'Inverser les couleurs' },
+        { id: 'adjDesaturate', label: 'Noir et blanc' },
+        { id: 'adjSepia', label: 'Sépia' },
+        { id: 'adjSep-2', label: '-' },
+        { id: 'adjPosterize', label: 'Postériser…' },
+        { id: 'adjThreshold', label: 'Seuil…' },
+      ],
     },
     {
       label: 'Effets',
@@ -134,7 +144,7 @@ export class MenuBarComponent {
     if (item.id === 'redo') {
       return !this.redoEnabled;
     }
-    if (item.id.startsWith('sep-cl')) {
+    if (item.id.startsWith('sep-') || item.id.startsWith('adjSep-')) {
       return false;
     }
     if (!this.layersEnabled) {
@@ -144,7 +154,12 @@ export class MenuBarComponent {
         'moveLayerUp', 'moveLayerDown',
         'importAsLayer',
       ];
-      if (layerIds.includes(item.id)) {
+      const adjIds = [
+        'adjBrightness', 'adjHSL',
+        'adjInvert', 'adjDesaturate', 'adjSepia',
+        'adjPosterize', 'adjThreshold',
+      ];
+      if (layerIds.includes(item.id) || adjIds.includes(item.id)) {
         return true;
       }
     }
