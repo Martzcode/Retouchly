@@ -78,3 +78,46 @@
   gap: 6px;
   white-space: nowrap;
 }
+
+.opt-select {
+  padding: 2px 4px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--surface-alt);
+  color: var(--text);
+  font: inherit;
+}
+
+.opt-stroke-styles {
+  display: flex;
+  gap: 4px;
+}
+
+.opt-stroke-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-alt);
+  color: var(--text-secondary);
+  border-radius: 4px;
+  cursor: default;
+}
+
+.opt-stroke-btn.active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.opt-stroke-btn svg {
+  width: 28px;
+  height: 8px;
+}
+
+.opt-stroke-label {
+  font-size: 10px;
+  line-height: 1;
+}

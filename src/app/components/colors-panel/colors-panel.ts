@@ -87,6 +87,7 @@ export class ColorsPanelComponent {
   startSv(event: PointerEvent): void {
     event.preventDefault();
     this.pickDrag = 'sv';
+    this.colors.startDrag();
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     this.applySv(event);
   }
@@ -98,6 +99,7 @@ export class ColorsPanelComponent {
   startHue(event: PointerEvent): void {
     event.preventDefault();
     this.pickDrag = 'hue';
+    this.colors.startDrag();
     (event.currentTarget as HTMLElement).setPointerCapture(event.pointerId);
     this.applyHue(event);
   }
@@ -108,6 +110,7 @@ export class ColorsPanelComponent {
 
   endPick(): void {
     this.pickDrag = null;
+    this.colors.endDrag();
   }
 
   onAlpha(event: Event): void {

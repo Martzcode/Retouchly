@@ -104,14 +104,14 @@
   }
 
   <div class="lp-actions">
-    <button class="lp-btn" (click)="onCommand('addLayer')" title="Nouveau calque (Ctrl+Maj+N)">＋</button>
-    <button class="lp-btn" (click)="onCommand('duplicateLayer')" title="Dupliquer">⧉</button>
-    <button class="lp-btn" (click)="onCommand('deleteLayer')" title="Supprimer">🗑</button>
+    <button class="lp-btn" (click)="onCommand('addLayer')" title="Nouveau calque (Ctrl+Maj+N)" [disabled]="!layers.hasDocument">＋</button>
+    <button class="lp-btn" (click)="onCommand('duplicateLayer')" title="Dupliquer" [disabled]="!layers.hasDocument">⧉</button>
+    <button class="lp-btn" (click)="onCommand('deleteLayer')" title="Supprimer" [disabled]="!layers.hasDocument">🗑</button>
     <span class="lp-sep"></span>
-    <button class="lp-btn" (click)="onCommand('moveLayerUp')" title="Monter">▲</button>
-    <button class="lp-btn" (click)="onCommand('moveLayerDown')" title="Descendre">▼</button>
+    <button class="lp-btn" (click)="onCommand('moveLayerUp')" title="Monter" [disabled]="!layers.hasDocument">▲</button>
+    <button class="lp-btn" (click)="onCommand('moveLayerDown')" title="Descendre" [disabled]="!layers.hasDocument">▼</button>
     <span class="lp-sep"></span>
-    <button class="lp-btn" (click)="onCommand('mergeDown')" title="Fusionner vers le bas (Ctrl+E)">⊟</button>
-    <button class="lp-btn" (click)="onCommand('flattenImage')" title="Aplatir (Ctrl+Maj+F)">▤</button>
+    <button class="lp-btn" (click)="onCommand('mergeDown')" title="Fusionner vers le bas (Ctrl+E)" [disabled]="!layers.hasDocument">⊟</button>
+    <button class="lp-btn" (click)="onCommand('flattenImage')" title="Aplatir (Ctrl+Maj+F)" [disabled]="!layers.hasDocument">▤</button>
   </div>
 </div>

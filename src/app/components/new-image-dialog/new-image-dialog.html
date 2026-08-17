@@ -1,0 +1,71 @@
+<div class="dialog-backdrop" (click)="onBackdropClick($event)">
+  <div class="dialog">
+    <div class="dialog-header">Nouvelle image</div>
+
+    <div class="dialog-body">
+      <div class="section">
+        <div class="section-title">Présélections</div>
+        <div class="preset-list">
+          @for (p of presets; track p.name) {
+            <button
+              class="preset-btn"
+              [class.active]="selectedPreset() === p.name && !isCustom()"
+              (click)="selectPreset(p.name)"
+            >{{ p.name }}</button>
+          }
+          <button
+            class="preset-btn"
+            [class.active]="isCustom()"
+            (click)="selectCustom()"
+          >Personnalisé…</button>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Taille</div>
+        <div class="size-row">
+          <div class="size-field">
+            <label>Largeur</label>
+            <input
+              type="number"
+              [value]="displayWidth"
+              [disabled]="!isCustom()"
+              (input)="onWidthInput($event)"
+              min="1"
+            />
+          </div>
+          <span class="size-sep">×</span>
+          <div class="size-field">
+            <label>Hauteur</label>
+            <input
+              type="number"
+              [value]="displayHeight"
+              [disabled]="!isCustom()"
+              (input)="onHeightInput($event)"
+              min="1"
+            />
+          </div>
+          <div class="size-field">
+            <label>Unité</label>
+            <select [value]="unit()" [disabled]="!isCustom()" (change)="onUnitChange($event)">
+              @for (u of units; track u) {
+                <option [value]="u" [selected]="u === unit()">{{ u }}</option>
+              }
+            </select>
+          </div>
+        </div>
+        <div class="size-info">
+          {{ displayWidth }} × {{ displayHeight }} {{ unit() }}
+          @if (unit() !== 'px') {
+            <span class="size-px">({{ pxWidth() }} × {{ pxHeight() }} px)</span>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="dialog-footer">
+      <button class="btn" (click)="onCancel()">Annuler</button>
+      <button class="btn btn-primary" (click)="onConfirm()">Créer</button>
+    </div>
+  </div>
+</div>

@@ -163,5 +163,82 @@
         Global (toute l'image)
       </label>
     }
+    @case ('drawShape') {
+      <span class="opt-label">{{ labels['drawShape'] }}</span>
+      <span class="opt-label">Type</span>
+      <div class="opt-stroke-styles" role="group" aria-label="Type de forme">
+        @for (type of shapeTypes; track type) {
+          <button
+            class="opt-stroke-btn"
+            [class.active]="shapeType() === type"
+            [title]="shapeLabels[type]"
+            (click)="setShapeType(type)"
+          >
+            <svg viewBox="0 0 24 16" preserveAspectRatio="xMidYMid meet">
+              @switch (type) {
+                @case ('rectangle') {
+                  <rect x="2" y="2" width="20" height="12" rx="1" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                }
+                @case ('ellipse') {
+                  <ellipse cx="12" cy="8" rx="10" ry="6" fill="none" stroke="currentColor" stroke-width="1.5"/>
+                }
+                @case ('line') {
+                  <line x1="2" y1="14" x2="22" y2="2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                }
+                @case ('polygon') {
+                  <polygon points="12,1 22,7 18,15 6,15 2,7" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                }
+              }
+            </svg>
+            <span class="opt-stroke-label">{{ shapeLabels[type] }}</span>
+          </button>
+        }
+      </div>
+      <span class="opt-label">Style</span>
+      <div class="opt-stroke-styles" role="group" aria-label="Style de trait">
+        @for (style of strokeStyles; track style) {
+          <button
+            class="opt-stroke-btn"
+            [class.active]="shapeStrokeStyle() === style"
+            [title]="strokeStyleLabels[style]"
+            (click)="setShapeStrokeStyle(style)"
+          >
+            <svg viewBox="0 0 32 8" preserveAspectRatio="none">
+              <line
+                x1="1" y1="4" x2="31" y2="4"
+                stroke="currentColor" stroke-width="3" stroke-linecap="round"
+                [attr.stroke-dasharray]="getStrokeDashArray(style)"
+              />
+            </svg>
+            <span class="opt-stroke-label">{{ strokeStyleLabels[style] }}</span>
+          </button>
+        }
+      </div>
+      <label class="opt">
+        Épaisseur
+        <input
+          class="opt-range"
+          type="range"
+          min="1"
+          max="50"
+          [value]="shapeStrokeWidth()"
+          (input)="setShapeStrokeWidth($any($event.target).value)"
+        />
+        <input
+          class="opt-number"
+          type="number"
+          min="1"
+          max="50"
+          [value]="shapeStrokeWidth()"
+          (input)="setShapeStrokeWidth($any($event.target).value)"
+        />
+      </label>
+      @if (shapeType() !== 'line') {
+        <label class="opt-check">
+          <input type="checkbox" [checked]="shapeFilled()" (change)="toggleShapeFilled()" />
+          Rempli
+        </label>
+      }
+    }
   }
 </div>

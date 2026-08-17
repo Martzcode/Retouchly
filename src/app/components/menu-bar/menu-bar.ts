@@ -24,6 +24,7 @@ const DROPDOWN_MIN_WIDTH = 230;
 export class MenuBarComponent {
   @Input() undoEnabled = false;
   @Input() redoEnabled = false;
+  @Input() layersEnabled = false;
   @Output() command = new EventEmitter<CommandEvent>();
 
   protected readonly openIndex = signal<number | null>(null);
@@ -132,6 +133,20 @@ export class MenuBarComponent {
     }
     if (item.id === 'redo') {
       return !this.redoEnabled;
+    }
+    if (item.id.startsWith('sep-cl')) {
+      return false;
+    }
+    if (!this.layersEnabled) {
+      const layerIds = [
+        'addLayer', 'duplicateLayer', 'deleteLayer',
+        'mergeDown', 'flattenImage',
+        'moveLayerUp', 'moveLayerDown',
+        'importAsLayer',
+      ];
+      if (layerIds.includes(item.id)) {
+        return true;
+      }
     }
     return !!item.disabled;
   }

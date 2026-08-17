@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { SelectionMode, Tool } from '../types';
+import { SelectionMode, ShapeType, StrokeStyle, Tool } from '../types';
 
 export const TOOL_LABELS: Record<Tool, string> = {
   pencil: 'Crayon',
@@ -11,7 +11,21 @@ export const TOOL_LABELS: Record<Tool, string> = {
   lasso: 'Lasso',
   wand: 'Baguette magique',
   moveSelection: 'Déplacer la sélection',
-  moveObject: 'Déplacer l’objet sélectionné',
+  moveObject: 'Déplacer l\u2019objet sélectionné',
+  drawShape: 'Forme',
+};
+
+export const SHAPE_TYPE_LABELS: Record<ShapeType, string> = {
+  rectangle: 'Rectangle',
+  ellipse: 'Ellipse',
+  line: 'Ligne',
+  polygon: 'Polygone',
+};
+
+export const STROKE_STYLE_LABELS: Record<StrokeStyle, string> = {
+  solid: 'Plein',
+  dashed: 'Tirets',
+  dotted: 'Pointillé',
 };
 
 export const SELECTION_MODE_LABELS: Record<SelectionMode, string> = {
@@ -30,6 +44,10 @@ export class ToolService {
   private readonly _selectionMode = signal<SelectionMode>('replace');
   private readonly _wandTolerance = signal(25);
   private readonly _wandGlobal = signal(false);
+  private readonly _shapeType = signal<ShapeType>('rectangle');
+  private readonly _shapeStrokeWidth = signal(3);
+  private readonly _shapeStrokeStyle = signal<StrokeStyle>('solid');
+  private readonly _shapeFilled = signal(false);
 
   readonly activeTool = this._activeTool.asReadonly();
   readonly brushSize = this._brushSize.asReadonly();
@@ -37,6 +55,10 @@ export class ToolService {
   readonly selectionMode = this._selectionMode.asReadonly();
   readonly wandTolerance = this._wandTolerance.asReadonly();
   readonly wandGlobal = this._wandGlobal.asReadonly();
+  readonly shapeType = this._shapeType.asReadonly();
+  readonly shapeStrokeWidth = this._shapeStrokeWidth.asReadonly();
+  readonly shapeStrokeStyle = this._shapeStrokeStyle.asReadonly();
+  readonly shapeFilled = this._shapeFilled.asReadonly();
 
   setTool(tool: Tool): void {
     this._activeTool.set(tool);
@@ -60,5 +82,21 @@ export class ToolService {
 
   setWandGlobal(global: boolean): void {
     this._wandGlobal.set(global);
+  }
+
+  setShapeType(type: ShapeType): void {
+    this._shapeType.set(type);
+  }
+
+  setShapeStrokeWidth(width: number): void {
+    this._shapeStrokeWidth.set(Math.max(1, Math.min(50, Math.round(width))));
+  }
+
+  setShapeStrokeStyle(style: StrokeStyle): void {
+    this._shapeStrokeStyle.set(style);
+  }
+
+  setShapeFilled(filled: boolean): void {
+    this._shapeFilled.set(filled);
   }
 }

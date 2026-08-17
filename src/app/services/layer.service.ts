@@ -48,6 +48,10 @@ export class LayerService {
     return this._height;
   }
 
+  get hasDocument(): boolean {
+    return this._width > 0 && this._height > 0;
+  }
+
   reset(w: number, h: number): void {
     this._width = w;
     this._height = h;
@@ -55,7 +59,10 @@ export class LayerService {
     this._activeLayerId.set('');
   }
 
-  addLayer(name?: string): Layer {
+  addLayer(name?: string): Layer | null {
+    if (!this.hasDocument) {
+      return null;
+    }
     const id = makeId();
     const { canvas, ctx } = createBuffer(this._width, this._height);
     const layer: Layer = {
@@ -353,6 +360,9 @@ export class LayerService {
       img.src = dataUrl;
     });
     const layer = this.addLayer(name);
+    if (!layer) {
+      return;
+    }
     layer.ctx.drawImage(img, 0, 0, this._width, this._height);
     this._layers.update((list) => [...list]);
   }

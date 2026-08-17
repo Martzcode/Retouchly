@@ -14,6 +14,7 @@ import { WindowControlsComponent } from '../window-controls/window-controls';
 export class TitleBarComponent {
   @Input() undoEnabled = false;
   @Input() redoEnabled = false;
+  @Input() layersEnabled = false;
   @Output() command = new EventEmitter<CommandEvent>();
 
   protected readonly doc = inject(DocumentService);

@@ -7,6 +7,7 @@ export class ColorsService {
   private readonly _primaryAlpha = signal(255);
   private readonly _secondaryAlpha = signal(255);
   private readonly _recent = signal<string[]>([]);
+  private _dragging = false;
 
   readonly primary = this._primary.asReadonly();
   readonly secondary = this._secondary.asReadonly();
@@ -16,12 +17,16 @@ export class ColorsService {
 
   setPrimary(hex: string): void {
     this._primary.set(normalizeHex(hex));
-    this.pushRecent(hex);
+    if (!this._dragging) {
+      this.pushRecent(hex);
+    }
   }
 
   setSecondary(hex: string): void {
     this._secondary.set(normalizeHex(hex));
-    this.pushRecent(hex);
+    if (!this._dragging) {
+      this.pushRecent(hex);
+    }
   }
 
   setPrimaryFromRgb(r: number, g: number, b: number): void {
@@ -84,6 +89,15 @@ export class ColorsService {
     const list = this._recent().filter((c) => c !== normalized);
     list.unshift(normalized);
     this._recent.set(list.slice(0, 10));
+  }
+
+  startDrag(): void {
+    this._dragging = true;
+  }
+
+  endDrag(): void {
+    this._dragging = false;
+    this.pushRecent(this._primary());
   }
 }
 

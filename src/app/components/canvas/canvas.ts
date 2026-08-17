@@ -11,7 +11,7 @@ import {
 import { ColorsService } from '../../services/colors.service';
 import { LayerService } from '../../services/layer.service';
 import { ToolService } from '../../services/tool.service';
-import { LayerSnapshot, SelectionMode } from '../../types';
+import { LayerSnapshot, SelectionMode, ShapeType, StrokeStyle } from '../../types';
 
 interface Rect {
   x: number;
@@ -87,6 +87,15 @@ export class CanvasComponent implements OnDestroy {
   private antFrame: number | null = null;
   private antPhase = 0;
 
+  private shapeDrag: { start: Point } | null = null;
+  private polygonPoints: Point[] = [];
+  private shapePreview: {
+    tool: ShapeType;
+    start: Point;
+    end: Point;
+    points: Point[];
+  } | null = null;
+
   readonly toolPreview = signal<{ x: number; y: number; size: number; square: boolean } | null>(
     null,
   );
@@ -142,6 +151,9 @@ export class CanvasComponent implements OnDestroy {
 
   compositeToDisplay(): void {
     this.layers.composite(this.ctx);
+    if (this.shapePreview) {
+      this.drawShapePreview();
+    }
   }
 
   zoomIn(): void {
@@ -158,6 +170,15 @@ export class CanvasComponent implements OnDestroy {
 
   clearSelection(): void {
     this.showSelection(null);
+    this.cancelPolygon();
+  }
+
+  cancelPolygon(): void {
+    if (this.polygonPoints.length > 0) {
+      this.polygonPoints = [];
+      this.shapePreview = null;
+      this.dirty.emit();
+    }
   }
 
   copySelection(): void {
@@ -386,6 +407,35 @@ export class CanvasComponent implements OnDestroy {
       this.startMoveTool(tool, pos, event);
       return;
     }
+    if (tool === 'drawShape') {
+      if (event.button !== 0) {
+        return;
+      }
+      const st = this.tools.shapeType();
+      if (st === 'polygon') {
+        if (this.polygonPoints.length >= 3) {
+          const first = this.polygonPoints[0];
+          const dist = Math.hypot(pos.x - first.x, pos.y - first.y);
+          if (dist < 6) {
+            this.stampPolygon();
+            return;
+          }
+        }
+        this.polygonPoints.push(pos);
+        this.shapePreview = {
+          tool: 'polygon',
+          start: this.polygonPoints[0],
+          end: pos,
+          points: [...this.polygonPoints],
+        };
+        this.dirty.emit();
+        return;
+      }
+      this.shapeDrag = { start: pos };
+      this.pushUndoSnapshot();
+      this.stageRef.nativeElement.setPointerCapture(event.pointerId);
+      return;
+    }
     this.strokeSecondary = event.button === 2;
     this.pushUndoSnapshot();
     this.drawing = true;
@@ -419,6 +469,29 @@ export class CanvasComponent implements OnDestroy {
     }
     if (this.moveObjectState) {
       this.updateMoveObject(pos);
+      return;
+    }
+    if (this.shapeDrag) {
+      const st = this.tools.shapeType();
+      if (st === 'rectangle' || st === 'ellipse' || st === 'line') {
+        this.shapePreview = {
+          tool: st,
+          start: this.shapeDrag.start,
+          end: pos,
+          points: [],
+        };
+        this.dirty.emit();
+      }
+      return;
+    }
+    if (this.tool() === 'drawShape' && this.tools.shapeType() === 'polygon' && this.polygonPoints.length > 0) {
+      this.shapePreview = {
+        tool: 'polygon',
+        start: this.polygonPoints[0],
+        end: pos,
+        points: [...this.polygonPoints],
+      };
+      this.dirty.emit();
       return;
     }
     this.updateToolPreview(pos);
@@ -479,6 +552,17 @@ export class CanvasComponent implements OnDestroy {
       }
       return;
     }
+    if (this.shapeDrag) {
+      const pos = this.toCanvasPos(event);
+      const st = this.tools.shapeType();
+      if (st === 'rectangle' || st === 'ellipse' || st === 'line') {
+        this.stampShape(st, this.shapeDrag.start, pos);
+      }
+      this.shapeDrag = null;
+      this.shapePreview = null;
+      this.dirty.emit();
+      return;
+    }
     this.drawing = false;
     this.last = null;
   }
@@ -487,6 +571,14 @@ export class CanvasComponent implements OnDestroy {
     this.drawing = false;
     this.last = null;
     this.toolPreview.set(null);
+  }
+
+  protected onDoubleClick(event: MouseEvent): void {
+    if (this.tool() === 'drawShape' && this.tools.shapeType() === 'polygon' && this.polygonPoints.length >= 2) {
+      const pos = this.toCanvasPos(event);
+      this.polygonPoints.push(pos);
+      this.stampPolygon();
+    }
   }
 
   private startSelectionTool(
@@ -1219,11 +1311,191 @@ export class CanvasComponent implements OnDestroy {
     this.sizeOverlay();
   }
 
-  private toCanvasPos(event: PointerEvent): Point {
+  private toCanvasPos(event: { clientX: number; clientY: number }): Point {
     const rect = this.canvasRef.nativeElement.getBoundingClientRect();
     return {
       x: (event.clientX - rect.left) / this.zoom(),
       y: (event.clientY - rect.top) / this.zoom(),
     };
+  }
+
+  private applyStrokeStyle(ctx: CanvasRenderingContext2D): void {
+    const style = this.tools.shapeStrokeStyle();
+    if (style === 'dashed') {
+      ctx.setLineDash([ctx.lineWidth * 3, ctx.lineWidth * 2]);
+    } else if (style === 'dotted') {
+      ctx.lineCap = 'round';
+      ctx.setLineDash([0, ctx.lineWidth * 2.5]);
+    } else {
+      ctx.setLineDash([]);
+    }
+  }
+
+  private stampShape(
+    shapeType: ShapeType,
+    start: Point,
+    end: Point,
+  ): void {
+    if (!this.hasDocument) {
+      return;
+    }
+    const layer = this.layers.getActiveLayer()!;
+    const ctx = layer.ctx;
+    const w = this.tools.shapeStrokeWidth();
+    const filled = this.tools.shapeFilled();
+    const primary = this.colors.primary();
+    const secondary = this.colors.secondary();
+
+    ctx.save();
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = primary;
+    ctx.fillStyle = secondary;
+    this.applyStrokeStyle(ctx);
+
+    if (shapeType === 'line') {
+      ctx.beginPath();
+      ctx.moveTo(Math.round(start.x), Math.round(start.y));
+      ctx.lineTo(Math.round(end.x), Math.round(end.y));
+      ctx.stroke();
+    } else {
+      const r = this.normalizedRect(start, end);
+      if (r.w < 1 && r.h < 1) {
+        ctx.restore();
+        return;
+      }
+      if (shapeType === 'rectangle') {
+        if (filled) {
+          ctx.fillRect(r.x, r.y, r.w, r.h);
+        }
+        ctx.strokeRect(r.x, r.y, r.w, r.h);
+      } else if (shapeType === 'ellipse') {
+        ctx.beginPath();
+        ctx.ellipse(
+          r.x + r.w / 2,
+          r.y + r.h / 2,
+          Math.max(0.5, r.w / 2),
+          Math.max(0.5, r.h / 2),
+          0,
+          0,
+          Math.PI * 2,
+        );
+        ctx.closePath();
+        if (filled) {
+          ctx.fill();
+        }
+        ctx.stroke();
+      }
+    }
+    ctx.restore();
+    this.compositeToDisplay();
+  }
+
+  private stampPolygon(): void {
+    if (!this.hasDocument || this.polygonPoints.length < 3) {
+      this.polygonPoints = [];
+      this.shapePreview = null;
+      this.dirty.emit();
+      return;
+    }
+    const layer = this.layers.getActiveLayer()!;
+    const ctx = layer.ctx;
+    const w = this.tools.shapeStrokeWidth();
+    const filled = this.tools.shapeFilled();
+    const primary = this.colors.primary();
+    const secondary = this.colors.secondary();
+
+    this.pushUndoSnapshot();
+
+    ctx.save();
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = primary;
+    ctx.fillStyle = secondary;
+    this.applyStrokeStyle(ctx);
+
+    ctx.beginPath();
+    ctx.moveTo(Math.round(this.polygonPoints[0].x), Math.round(this.polygonPoints[0].y));
+    for (let i = 1; i < this.polygonPoints.length; i++) {
+      ctx.lineTo(Math.round(this.polygonPoints[i].x), Math.round(this.polygonPoints[i].y));
+    }
+    ctx.closePath();
+    if (filled) {
+      ctx.fill();
+    }
+    ctx.stroke();
+
+    ctx.restore();
+    this.polygonPoints = [];
+    this.shapePreview = null;
+    this.compositeToDisplay();
+    this.dirty.emit();
+  }
+
+  private drawShapePreview(): void {
+    const p = this.shapePreview;
+    if (!p) {
+      return;
+    }
+    const ctx = this.ctx;
+    const w = this.tools.shapeStrokeWidth();
+    const filled = this.tools.shapeFilled();
+    const primary = this.colors.primary();
+    const secondary = this.colors.secondary();
+
+    ctx.save();
+    ctx.lineWidth = w;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = primary;
+    ctx.fillStyle = secondary;
+    this.applyStrokeStyle(ctx);
+
+    if (p.tool === 'line') {
+      ctx.beginPath();
+      ctx.moveTo(Math.round(p.start.x), Math.round(p.start.y));
+      ctx.lineTo(Math.round(p.end.x), Math.round(p.end.y));
+      ctx.stroke();
+    } else if (p.tool === 'rectangle') {
+      const r = this.normalizedRect(p.start, p.end);
+      if (filled) {
+        ctx.fillRect(r.x, r.y, r.w, r.h);
+      }
+      ctx.strokeRect(r.x, r.y, r.w, r.h);
+    } else if (p.tool === 'ellipse') {
+      const r = this.normalizedRect(p.start, p.end);
+      ctx.beginPath();
+      ctx.ellipse(
+        r.x + r.w / 2,
+        r.y + r.h / 2,
+        Math.max(0.5, r.w / 2),
+        Math.max(0.5, r.h / 2),
+        0,
+        0,
+        Math.PI * 2,
+      );
+      ctx.closePath();
+      if (filled) {
+        ctx.fill();
+      }
+      ctx.stroke();
+    } else if (p.tool === 'polygon' && p.points.length > 0) {
+      ctx.beginPath();
+      ctx.moveTo(Math.round(p.points[0].x), Math.round(p.points[0].y));
+      for (let i = 1; i < p.points.length; i++) {
+        ctx.lineTo(Math.round(p.points[i].x), Math.round(p.points[i].y));
+      }
+      ctx.lineTo(Math.round(p.end.x), Math.round(p.end.y));
+      if (p.points.length >= 3) {
+        ctx.closePath();
+        if (filled) {
+          ctx.fill();
+        }
+      }
+      ctx.stroke();
+    }
+    ctx.restore();
   }
 }

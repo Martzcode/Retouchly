@@ -27,7 +27,12 @@ export type Tool =
   | 'lasso'
   | 'wand'
   | 'moveSelection'
-  | 'moveObject';
+  | 'moveObject'
+  | 'drawShape';
+
+export type ShapeType = 'rectangle' | 'ellipse' | 'line' | 'polygon';
+
+export type StrokeStyle = 'solid' | 'dashed' | 'dotted';
 
 export type SelectionMode = 'replace' | 'add' | 'subtract' | 'intersect' | 'xor';
 

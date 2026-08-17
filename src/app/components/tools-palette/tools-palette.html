@@ -101,13 +101,23 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'moveObject'"
-    title="Déplacer l’objet sélectionné (M)"
+    title="Déplacer l'objet sélectionné (M)"
     (click)="select('moveObject')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <rect x="5.5" y="5.5" width="13" height="13" rx="1" stroke-dasharray="4 3"/>
       <path d="M12 4v16"/>
       <path d="m7 9 5-5 5 5"/>
+    </svg>
+  </button>
+  <button
+    class="tool-btn"
+    [class.active]="activeTool() === 'drawShape'"
+    title="Forme (U)"
+    (click)="select('drawShape')"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <polygon points="12,2 22,9 18,21 6,21 2,9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
     </svg>
   </button>
 </div>

@@ -3,6 +3,7 @@
     (command)="onCommand($event)"
     [undoEnabled]="canvas.canUndo()"
     [redoEnabled]="canvas.canRedo()"
+    [layersEnabled]="canvas.hasDocument"
   ></app-title-bar>
   <app-tool-bar
     (command)="onCommand($event)"
@@ -35,4 +36,10 @@
     [zoom]="zoom()"
     [tool]="toolLabel()"
   ></app-status-bar>
+  @if (showNewDialog()) {
+    <app-new-image-dialog
+      (confirm)="onNewConfirm($event)"
+      (cancel)="onNewCancel()"
+    ></app-new-image-dialog>
+  }
 </div>

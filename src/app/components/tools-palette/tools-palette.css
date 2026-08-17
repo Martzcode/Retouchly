@@ -45,3 +45,10 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+
+.tool-separator {
+  width: 20px;
+  height: 1px;
+  background: var(--border);
+  margin: 3px 0;
+}

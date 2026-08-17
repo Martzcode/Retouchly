@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
 import { CanvasComponent } from './components/canvas/canvas';
 import { ColorsPanelComponent } from './components/colors-panel/colors-panel';
 import { LayersPanelComponent } from './components/layers-panel/layers-panel';
+import { NewImageDialogComponent } from './components/new-image-dialog/new-image-dialog';
 import { StatusBarComponent } from './components/status-bar/status-bar';
 import { TitleBarComponent } from './components/title-bar/title-bar';
 import { ToolBarComponent } from './components/tool-bar/tool-bar';
@@ -23,6 +24,7 @@ import { CommandEvent } from './types';
     ToolsPaletteComponent,
     CanvasComponent,
     LayersPanelComponent,
+    NewImageDialogComponent,
     ColorsPanelComponent,
     StatusBarComponent,
   ],
@@ -40,6 +42,7 @@ export class App {
 
   protected cursorPos = { x: 0, y: 0 };
   protected zoom = signal(1);
+  protected showNewDialog = signal(false);
 
   @HostListener('window:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
@@ -121,6 +124,8 @@ export class App {
         this.tools.setTool('moveSelection');
       } else if (key === 'm') {
         this.tools.setTool('moveObject');
+      } else if (key === 'u') {
+        this.tools.setTool('drawShape');
       }
     } else if (mod && !event.shiftKey && key === 'e') {
       event.preventDefault();
@@ -247,9 +252,18 @@ export class App {
   }
 
   protected onNew(): void {
+    this.showNewDialog.set(true);
+  }
+
+  protected onNewConfirm(event: { width: number; height: number }): void {
+    this.showNewDialog.set(false);
     this.doc.setError(null);
-    this.doc.newDocument(800, 600);
-    this.canvas.newDocument(800, 600);
+    this.doc.newDocument(event.width, event.height);
+    this.canvas.newDocument(event.width, event.height);
+  }
+
+  protected onNewCancel(): void {
+    this.showNewDialog.set(false);
   }
 
   protected async onOpen(): Promise<void> {
@@ -297,6 +311,7 @@ export class App {
   }
 
   protected onCanvasDirty(): void {
+    this.canvas.compositeToDisplay();
     this.doc.markDirty();
     this.layersPanel?.scheduleThumbRefresh();
   }
