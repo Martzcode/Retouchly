@@ -1177,8 +1177,11 @@ export class CanvasComponent implements OnDestroy {
 
   private applyZoom(): void {
     const wrap = this.wrapRef.nativeElement;
-    wrap.style.width = `${this.nativeWidth * this.zoom()}px`;
-    wrap.style.height = `${this.nativeHeight * this.zoom()}px`;
+    const z = this.zoom();
+    wrap.style.transform = `scale(${z})`;
+    wrap.style.transformOrigin = 'top left';
+    wrap.style.width = `${this.nativeWidth}px`;
+    wrap.style.height = `${this.nativeHeight}px`;
   }
 
   private sizeOverlay(): void {

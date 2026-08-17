@@ -121,6 +121,7 @@ export class LayersPanelComponent {
     const val = Number((event.target as HTMLInputElement).value);
     this.onCommand('transformLayer');
     this.layers.setRotation(id, val);
+    this.compositeNeeded.emit();
     setTimeout(() => this.scheduleThumbRefresh(), 50);
   }
 
@@ -128,12 +129,14 @@ export class LayersPanelComponent {
     const val = Number((event.target as HTMLInputElement).value);
     this.onCommand('transformLayer');
     this.layers.setScale(id, val);
+    this.compositeNeeded.emit();
     setTimeout(() => this.scheduleThumbRefresh(), 50);
   }
 
   onResetTransform(id: string): void {
     this.onCommand('transformLayer');
     this.layers.resetTransform(id);
+    this.compositeNeeded.emit();
     setTimeout(() => this.scheduleThumbRefresh(), 50);
   }
 

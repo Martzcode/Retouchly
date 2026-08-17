@@ -12,6 +12,7 @@ export interface Layer {
   scale: number;
   canvas: HTMLCanvasElement;
   ctx: CanvasRenderingContext2D;
+  _basePixels: ImageData | null;
 }
 
 let layerIdCounter = 0;
@@ -68,6 +69,7 @@ export class LayerService {
       scale: 100,
       canvas,
       ctx,
+      _basePixels: null,
     };
     const list = this._layers();
     const activeIdx = list.findIndex((l) => l.id === this._activeLayerId());
@@ -118,6 +120,11 @@ export class LayerService {
       scale: src.scale,
       canvas,
       ctx,
+      _basePixels: src._basePixels ? new ImageData(
+        new Uint8ClampedArray(src._basePixels.data),
+        src._basePixels.width,
+        src._basePixels.height,
+      ) : null,
     };
     const next = [...list];
     next.splice(idx + 1, 0, dup);
@@ -205,6 +212,7 @@ export class LayerService {
       scale: 100,
       canvas,
       ctx,
+      _basePixels: null,
     };
     this._layers.set([flat]);
     this._activeLayerId.set(flat.id);
@@ -329,6 +337,7 @@ export class LayerService {
         scale: snap.scale,
         canvas,
         ctx,
+        _basePixels: null,
       };
     });
     this._layers.set(layers);
@@ -366,21 +375,12 @@ export class LayerService {
     if (!layer) {
       return;
     }
-    const delta = degrees - layer.rotation;
-    if (delta === 0) {
-      return;
+    if (layer._basePixels === null && layer.rotation === 0 && layer.scale === 100) {
+      layer._basePixels = layer.ctx.getImageData(0, 0, this._width, this._height);
     }
-    const cx = this._width / 2;
-    const cy = this._height / 2;
-    const rad = (delta * Math.PI) / 180;
-    const m = new DOMMatrix()
-      .translateSelf(cx, cy)
-      .rotateSelf(rad)
-      .translateSelf(-cx, -cy);
-    this.transformLayer(id, m);
-    this._layers.update((list) =>
-      list.map((l) => (l.id === id ? { ...l, rotation: degrees } : l)),
-    );
+    layer.rotation = degrees;
+    this.applyStoredTransform(layer);
+    this._layers.update((list) => [...list]);
   }
 
   setScale(id: string, percent: number): void {
@@ -388,20 +388,12 @@ export class LayerService {
     if (!layer) {
       return;
     }
-    const ratio = percent / layer.scale;
-    if (ratio === 1) {
-      return;
+    if (layer._basePixels === null && layer.rotation === 0 && layer.scale === 100) {
+      layer._basePixels = layer.ctx.getImageData(0, 0, this._width, this._height);
     }
-    const cx = this._width / 2;
-    const cy = this._height / 2;
-    const m = new DOMMatrix()
-      .translateSelf(cx, cy)
-      .scaleSelf(ratio, ratio)
-      .translateSelf(-cx, -cy);
-    this.transformLayer(id, m);
-    this._layers.update((list) =>
-      list.map((l) => (l.id === id ? { ...l, scale: percent } : l)),
-    );
+    layer.scale = percent;
+    this.applyStoredTransform(layer);
+    this._layers.update((list) => [...list]);
   }
 
   resetTransform(id: string): void {
@@ -409,22 +401,35 @@ export class LayerService {
     if (!layer) {
       return;
     }
-    if (layer.rotation === 0 && layer.scale === 100) {
+    if (layer._basePixels) {
+      layer.ctx.putImageData(layer._basePixels, 0, 0);
+      layer._basePixels = null;
+    }
+    layer.rotation = 0;
+    layer.scale = 100;
+    this._layers.update((list) => [...list]);
+  }
+
+  private applyStoredTransform(layer: Layer): void {
+    if (!layer._basePixels) {
       return;
     }
+    const { canvas: tmp, ctx: tmpCtx } = createBuffer(this._width, this._height);
+    tmpCtx.putImageData(layer._basePixels, 0, 0);
+
     const cx = this._width / 2;
     const cy = this._height / 2;
-    const rad = (-layer.rotation * Math.PI) / 180;
-    const invScale = 100 / layer.scale;
-    const m = new DOMMatrix()
-      .translateSelf(cx, cy)
-      .rotateSelf(rad)
-      .scaleSelf(invScale, invScale)
-      .translateSelf(-cx, -cy);
-    this.transformLayer(id, m);
-    this._layers.update((list) =>
-      list.map((l) => (l.id === id ? { ...l, rotation: 0, scale: 100 } : l)),
-    );
+    const rad = (layer.rotation * Math.PI) / 180;
+    const s = layer.scale / 100;
+
+    const { canvas: out, ctx: outCtx } = createBuffer(this._width, this._height);
+    outCtx.translate(cx, cy);
+    outCtx.rotate(rad);
+    outCtx.scale(s, s);
+    outCtx.drawImage(tmp, -cx, -cy);
+
+    layer.ctx.clearRect(0, 0, this._width, this._height);
+    layer.ctx.drawImage(out, 0, 0);
   }
 
   private nextLayerName(): string {
