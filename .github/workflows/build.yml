@@ -24,7 +24,8 @@ jobs:
     name: Compute version
     runs-on: ubuntu-latest
     outputs:
-      version: ${{ steps.calc.outputs.version }}
+      version: ${{ steps.calc.outputs.version }}   # YYYY.MM.xx  — display / tags
+      semver:  ${{ steps.calc.outputs.semver }}    # YYYY.M.xx   — semver for Tauri/Cargo
 
     steps:
       - name: Checkout (full history for tags)
@@ -40,11 +41,14 @@ jobs:
           import subprocess, datetime, os, re
 
           now    = datetime.date.today()
-          prefix = now.strftime("%Y.%m")           # e.g. "2026.08"
+          # Padded prefix used for tag lookup and display (e.g. "2026.08")
+          prefix_padded = now.strftime("%Y.%m")
+          # Unpadded prefix for semver (e.g. "2026.8") — semver forbids leading zeros
+          prefix_semver = f"{now.year}.{now.month}"
 
           # Collect all tags matching our scheme for the current month
           raw = subprocess.run(
-              ["git", "tag", "--list", f"{prefix}.*"],
+              ["git", "tag", "--list", f"{prefix_padded}.*"],
               capture_output=True, text=True
           ).stdout.strip()
 
@@ -55,11 +59,14 @@ jobs:
                   existing.append(int(m.group(1)))
 
           patch   = (max(existing) + 1) if existing else 1
-          version = f"{prefix}.{patch}"
+          version = f"{prefix_padded}.{patch}"    # e.g. "2026.08.1"
+          semver  = f"{prefix_semver}.{patch}"    # e.g. "2026.8.1"  (valid semver)
 
-          print(f"Computed version: {version}")
+          print(f"Computed version : {version}")
+          print(f"Semver version   : {semver}")
           with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
               fh.write(f"version={version}\n")
+              fh.write(f"semver={semver}\n")
 
       # Only tag on a real push to main (not on PRs) to avoid duplicate tags
       - name: Create and push version tag
@@ -104,13 +111,14 @@ jobs:
         run: npm install
 
       # Patch version in every file that embeds it
+      # tauri.conf.json and Cargo.toml require strict semver (no leading zeros)
       - name: Patch version — tauri.conf.json
         shell: python3 {0}
         run: |
           import json, pathlib
           p = pathlib.Path("src-tauri/tauri.conf.json")
           cfg = json.loads(p.read_text(encoding="utf-8"))
-          cfg["version"] = "${{ needs.version.outputs.version }}"
+          cfg["version"] = "${{ needs.version.outputs.semver }}"
           p.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
       - name: Patch version — Cargo.toml
@@ -119,7 +127,7 @@ jobs:
           import re, pathlib
           p = pathlib.Path("src-tauri/Cargo.toml")
           txt = p.read_text(encoding="utf-8")
-          txt = re.sub(r'^(version\s*=\s*)"[^"]+"', r'\g<1>"${{ needs.version.outputs.version }}"', txt, count=1, flags=re.MULTILINE)
+          txt = re.sub(r'^(version\s*=\s*)"[^"]+"', r'\g<1>"${{ needs.version.outputs.semver }}"', txt, count=1, flags=re.MULTILINE)
           p.write_text(txt, encoding="utf-8")
 
       - name: Patch version — i18n/en.json
@@ -236,7 +244,7 @@ jobs:
           import json, pathlib
           p = pathlib.Path("src-tauri/tauri.conf.json")
           cfg = json.loads(p.read_text(encoding="utf-8"))
-          cfg["version"] = "${{ needs.version.outputs.version }}"
+          cfg["version"] = "${{ needs.version.outputs.semver }}"
           p.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
           EOF
 
@@ -246,7 +254,7 @@ jobs:
           import re, pathlib
           p = pathlib.Path("src-tauri/Cargo.toml")
           txt = p.read_text(encoding="utf-8")
-          txt = re.sub(r'^(version\s*=\s*)"[^"]+"', r'\g<1>"${{ needs.version.outputs.version }}"', txt, count=1, flags=re.MULTILINE)
+          txt = re.sub(r'^(version\s*=\s*)"[^"]+"', r'\g<1>"${{ needs.version.outputs.semver }}"', txt, count=1, flags=re.MULTILINE)
           p.write_text(txt, encoding="utf-8")
           EOF
 
@@ -327,7 +335,7 @@ jobs:
           import json, pathlib
           p = pathlib.Path("src-tauri/tauri.conf.json")
           cfg = json.loads(p.read_text(encoding="utf-8"))
-          cfg["version"] = "${{ needs.version.outputs.version }}"
+          cfg["version"] = "${{ needs.version.outputs.semver }}"
           p.write_text(json.dumps(cfg, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
           EOF
 
@@ -337,7 +345,7 @@ jobs:
           import re, pathlib
           p = pathlib.Path("src-tauri/Cargo.toml")
           txt = p.read_text(encoding="utf-8")
-          txt = re.sub(r'^(version\s*=\s*)"[^"]+"', r'\g<1>"${{ needs.version.outputs.version }}"', txt, count=1, flags=re.MULTILINE)
+          txt = re.sub(r'^(version\s*=\s*)"[^"]+"', r'\g<1>"${{ needs.version.outputs.semver }}"', txt, count=1, flags=re.MULTILINE)
           p.write_text(txt, encoding="utf-8")
           EOF
 
