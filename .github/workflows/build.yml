@@ -165,13 +165,17 @@ jobs:
         run: |
           $version   = "${{ needs.version.outputs.semver }}"
           $publisher = if ($env:MSIX_PUBLISHER) { $env:MSIX_PUBLISHER } else { "CN=Retouchly" }
-          $msi       = (Get-ChildItem -Path "src-tauri/target/release/bundle/msi" -Filter "*.msi" | Select-Object -First 1).FullName
-          $msixDir   = "$env:RUNNER_TEMP\msix_layout"
-          $msixOut   = "src-tauri/target/release/bundle/msix"
+          $exe = (Get-ChildItem -Path "src-tauri/target/release" -Filter "retouchly.exe" | Select-Object -First 1).FullName
+          if (-not $exe) {
+            $exe = (Get-ChildItem -Path "src-tauri/target/release" -Filter "*.exe" | Select-Object -First 1).FullName
+          }
+          $msixDir = "$env:RUNNER_TEMP\msix_layout"
+          $msixOut = "src-tauri/target/release/bundle/msix"
           New-Item -ItemType Directory -Force -Path $msixDir, $msixOut | Out-Null
 
-          # Copy MSI as the payload
-          Copy-Item $msi "$msixDir\Retouchly.msi"
+          # Copy executable and any runtime DLLs as the MSIX payload
+          Copy-Item $exe "$msixDir\Retouchly.exe"
+          Get-ChildItem -Path "src-tauri/target/release" -Filter "*.dll" | Copy-Item -Destination $msixDir
 
           # AppxManifest — Publisher must match your signing certificate CN exactly
           $manifest = @"
@@ -198,7 +202,7 @@ jobs:
             <Resources><Resource Language="en-US" /></Resources>
             <Applications>
               <Application Id="Retouchly"
-                           Executable="Retouchly.msi"
+                           Executable="Retouchly.exe"
                            EntryPoint="Windows.FullTrustApplication">
                 <uap:VisualElements DisplayName="Retouchly"
                                     Description="Open source image editor"
