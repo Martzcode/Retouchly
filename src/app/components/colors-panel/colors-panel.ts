@@ -1,5 +1,6 @@
 import { Component, inject, signal } from '@angular/core';
 import { ColorsService, hexToRgb, hexToRgba, rgbToHex, rgbToHsv, normalizeHex } from '../../services/colors.service';
+import { I18nService } from '../../services/i18n.service';
 
 type Target = 'primary' | 'secondary';
 
@@ -10,6 +11,7 @@ type Target = 'primary' | 'secondary';
   styleUrl: './colors-panel.css',
 })
 export class ColorsPanelComponent {
+  protected readonly i18n = inject(I18nService);
   private readonly colors = inject(ColorsService);
 
   readonly recent = this.colors.recent;

@@ -1,10 +1,10 @@
 @if (open) {
   <div class="dialog-backdrop" (click)="cancel()">
     <div class="dialog" (click)="$event.stopPropagation()">
-      <h3 class="dialog-title">Redimensionner l'image</h3>
+      <h3 class="dialog-title">{{ i18n.t('resizeImage.title') }}</h3>
       <div class="dialog-row">
         <label class="dialog-label">
-          Largeur (px)
+          {{ i18n.t('resizeImage.width') }}
           <input class="dialog-input" type="number" min="1" [(ngModel)]="width" (ngModelChange)="onWidthChange()" />
         </label>
         <label class="lock-ratio">
@@ -20,14 +20,14 @@
           </svg>
         </label>
         <label class="dialog-label">
-          Hauteur (px)
+          {{ i18n.t('resizeImage.height') }}
           <input class="dialog-input" type="number" min="1" [(ngModel)]="height" (ngModelChange)="onHeightChange()" />
         </label>
       </div>
       <div class="dialog-actions">
         <span></span>
         <div class="dialog-actions-right">
-          <button class="dialog-btn" (click)="cancel()">Annuler</button>
+          <button class="dialog-btn" (click)="cancel()">{{ i18n.t('dialog.cancel') }}</button>
           <button class="dialog-btn primary" (click)="confirm()">OK</button>
         </div>
       </div>

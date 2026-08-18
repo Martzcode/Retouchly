@@ -1,5 +1,5 @@
 <div class="layers-panel">
-  <div class="lp-header">Calques</div>
+  <div class="lp-header">{{ i18n.t('layers.title') }}</div>
 
   <div class="lp-list">
     @for (layer of reversedLayers; track layer.id; let idx = $index) {
@@ -37,7 +37,7 @@
           class="lp-eye"
           [class.hidden]="!layer.visible"
           (click)="toggleVisibility(layer.id, layer.visible); $event.stopPropagation()"
-          title="Visibilité"
+          [title]="i18n.t('layers.visibility')"
           [textContent]="layer.visible ? '👁' : '—'"
         ></button>
 
@@ -45,7 +45,7 @@
           class="lp-lock"
           [class.locked]="layer.locked"
           (click)="toggleLock(layer.id, layer.locked); $event.stopPropagation()"
-          title="Verrouillage"
+          [title]="i18n.t('layers.lock')"
           [textContent]="layer.locked ? '🔒' : '🔓'"
         ></button>
       </div>
@@ -55,7 +55,7 @@
   @if (activeLayer(); as active) {
     <div class="lp-props">
       <div class="lp-prop-row">
-        <label>Opacité</label>
+        <label>{{ i18n.t('layers.opacity') }}</label>
         <input
           type="range"
           min="0"
@@ -66,15 +66,15 @@
         <span>{{ active.opacity }}%</span>
       </div>
       <div class="lp-prop-row">
-        <label>Mode</label>
+        <label>{{ i18n.t('layers.mode') }}</label>
         <select [value]="active.blendMode" (change)="onBlendModeChange(active.id, $event)">
           @for (mode of blendModes; track mode) {
-            <option [value]="mode" [selected]="mode === active.blendMode">{{ blendLabels[mode] }}</option>
+            <option [value]="mode" [selected]="mode === active.blendMode">{{ blendLabel(mode) }}</option>
           }
         </select>
       </div>
       <div class="lp-prop-row">
-        <label>Rotation</label>
+        <label>{{ i18n.t('layers.rotation') }}</label>
         <input
           type="range"
           min="-180"
@@ -85,7 +85,7 @@
         <span>{{ active.rotation }}°</span>
       </div>
       <div class="lp-prop-row">
-        <label>Zoom</label>
+        <label>{{ i18n.t('layers.scale') }}</label>
         <input
           type="range"
           min="10"
@@ -97,21 +97,21 @@
       </div>
       <div class="lp-prop-row">
         <button class="lp-btn-inline" (click)="onResetTransform(active.id)" [disabled]="active.rotation === 0 && active.scale === 100">
-          Réinitialiser transformation
+          {{ i18n.t('layers.resetTransform') }}
         </button>
       </div>
     </div>
   }
 
   <div class="lp-actions">
-    <button class="lp-btn" (click)="onCommand('addLayer')" title="Nouveau calque (Ctrl+Maj+N)" [disabled]="!layers.hasDocument">＋</button>
-    <button class="lp-btn" (click)="onCommand('duplicateLayer')" title="Dupliquer" [disabled]="!layers.hasDocument">⧉</button>
-    <button class="lp-btn" (click)="onCommand('deleteLayer')" title="Supprimer" [disabled]="!layers.hasDocument">🗑</button>
+    <button class="lp-btn" (click)="onCommand('addLayer')" [title]="i18n.t('layers.newLayer')" [disabled]="!layers.hasDocument">＋</button>
+    <button class="lp-btn" (click)="onCommand('duplicateLayer')" [title]="i18n.t('layers.duplicate')" [disabled]="!layers.hasDocument">⧉</button>
+    <button class="lp-btn" (click)="onCommand('deleteLayer')" [title]="i18n.t('layers.delete')" [disabled]="!layers.hasDocument">🗑</button>
     <span class="lp-sep"></span>
-    <button class="lp-btn" (click)="onCommand('moveLayerUp')" title="Monter" [disabled]="!layers.hasDocument">▲</button>
-    <button class="lp-btn" (click)="onCommand('moveLayerDown')" title="Descendre" [disabled]="!layers.hasDocument">▼</button>
+    <button class="lp-btn" (click)="onCommand('moveLayerUp')" [title]="i18n.t('layers.up')" [disabled]="!layers.hasDocument">▲</button>
+    <button class="lp-btn" (click)="onCommand('moveLayerDown')" [title]="i18n.t('layers.down')" [disabled]="!layers.hasDocument">▼</button>
     <span class="lp-sep"></span>
-    <button class="lp-btn" (click)="onCommand('mergeDown')" title="Fusionner vers le bas (Ctrl+E)" [disabled]="!layers.hasDocument">⊟</button>
-    <button class="lp-btn" (click)="onCommand('flattenImage')" title="Aplatir (Ctrl+Maj+F)" [disabled]="!layers.hasDocument">▤</button>
+    <button class="lp-btn" (click)="onCommand('mergeDown')" [title]="i18n.t('layers.mergeDown')" [disabled]="!layers.hasDocument">⊟</button>
+    <button class="lp-btn" (click)="onCommand('flattenImage')" [title]="i18n.t('layers.flatten')" [disabled]="!layers.hasDocument">▤</button>
   </div>
 </div>

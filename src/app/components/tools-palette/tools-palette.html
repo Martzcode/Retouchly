@@ -1,8 +1,8 @@
-<div class="tools-palette" role="toolbar" aria-label="Outils">
+<div class="tools-palette" role="toolbar" [attr.aria-label]="i18n.t('tools')">
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'brush'"
-    title="Pinceau (B)"
+    [title]="i18n.t('tool.brushTip')"
     (click)="select('brush')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -13,7 +13,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'pencil'"
-    title="Crayon (P)"
+    [title]="i18n.t('tool.pencilTip')"
     (click)="select('pencil')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -23,7 +23,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'eraser'"
-    title="Gomme (E)"
+    [title]="i18n.t('tool.eraserTip')"
     (click)="select('eraser')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -35,7 +35,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'pipette'"
-    title="Pipette (I)"
+    [title]="i18n.t('tool.pipetteTip')"
     (click)="select('pipette')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -46,7 +46,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'selectRect'"
-    title="Sélection rectangle (R)"
+    [title]="i18n.t('tool.selectRectTip')"
     (click)="select('selectRect')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -56,7 +56,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'selectEllipse'"
-    title="Sélection ellipse (O)"
+    [title]="i18n.t('tool.selectEllipseTip')"
     (click)="select('selectEllipse')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -66,7 +66,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'lasso'"
-    title="Lasso (L)"
+    [title]="i18n.t('tool.lassoTip')"
     (click)="select('lasso')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -78,7 +78,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'wand'"
-    title="Baguette magique (W)"
+    [title]="i18n.t('tool.wandTip')"
     (click)="select('wand')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -90,7 +90,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'moveSelection'"
-    title="Déplacer la sélection (V)"
+    [title]="i18n.t('tool.moveSelectionTip')"
     (click)="select('moveSelection')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -101,7 +101,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'moveObject'"
-    title="Déplacer l'objet sélectionné (M)"
+    [title]="i18n.t('tool.moveObjectTip')"
     (click)="select('moveObject')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -113,7 +113,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'drawShape'"
-    title="Forme (U)"
+    [title]="i18n.t('tool.drawShapeTip')"
     (click)="select('drawShape')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -123,7 +123,7 @@
   <button
     class="tool-btn"
     [class.active]="activeTool() === 'text'"
-    title="Texte (T)"
+    [title]="i18n.t('tool.textTip')"
     (click)="select('text')"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">

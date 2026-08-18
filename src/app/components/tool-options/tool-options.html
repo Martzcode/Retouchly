@@ -1,6 +1,6 @@
 <div class="tool-options">
   @if (isSelectionTool()) {
-    <span class="opt-label">Mode de sélection</span>
+    <span class="opt-label">{{ i18n.t('toolOption.selectionMode') }}</span>
     <div class="opt-modes" role="group" aria-label="Mode de sélection">
       @for (mode of modes; track mode) {
         <button
@@ -18,7 +18,7 @@
     @case ('brush') {
       <span class="opt-label">{{ labels['brush'] }}</span>
       <label class="opt">
-        Taille
+        {{ i18n.t('toolOption.size') }}
         <input
           class="opt-range"
           type="range"
@@ -37,7 +37,7 @@
         />
       </label>
       <label class="opt">
-        Dureté
+        {{ i18n.t('toolOption.hardness') }}
         <input
           class="opt-range"
           type="range"
@@ -60,7 +60,7 @@
     @case ('pencil') {
       <span class="opt-label">{{ labels['pencil'] }}</span>
       <label class="opt">
-        Taille
+        {{ i18n.t('toolOption.size') }}
         <input
           class="opt-range"
           type="range"
@@ -82,7 +82,7 @@
     @case ('eraser') {
       <span class="opt-label">{{ labels['eraser'] }}</span>
       <label class="opt">
-        Taille
+        {{ i18n.t('toolOption.size') }}
         <input
           class="opt-range"
           type="range"
@@ -101,7 +101,7 @@
         />
       </label>
       <label class="opt">
-        Dureté
+        {{ i18n.t('toolOption.hardness') }}
         <input
           class="opt-range"
           type="range"
@@ -123,24 +123,24 @@
     }
     @case ('pipette') {
       <span class="opt-label">{{ labels['pipette'] }}</span>
-      <span class="opt-hint">Clic gauche : primaire — clic droit : secondaire</span>
+      <span class="opt-hint">{{ i18n.t('toolOptionHint.pipetteHint') }}</span>
     }
     @case ('selectRect') {
       <span class="opt-label">{{ labels['selectRect'] }}</span>
-      <span class="opt-hint">Glissez pour définir — Échap pour désélectionner</span>
+      <span class="opt-hint">{{ i18n.t('toolOptionHint.selectRectHint') }}</span>
     }
     @case ('selectEllipse') {
       <span class="opt-label">{{ labels['selectEllipse'] }}</span>
-      <span class="opt-hint">Glissez pour définir une ellipse</span>
+      <span class="opt-hint">{{ i18n.t('toolOptionHint.selectEllipseHint') }}</span>
     }
     @case ('lasso') {
       <span class="opt-label">{{ labels['lasso'] }}</span>
-      <span class="opt-hint">Tracez une forme libre</span>
+      <span class="opt-hint">{{ i18n.t('toolOptionHint.lassoHint') }}</span>
     }
     @case ('wand') {
       <span class="opt-label">{{ labels['wand'] }}</span>
       <label class="opt">
-        Tolérance
+        {{ i18n.t('toolOption.tolerance') }}
         <input
           class="opt-range"
           type="range"
@@ -160,12 +160,12 @@
       </label>
       <label class="opt-check">
         <input type="checkbox" [checked]="wandGlobal()" (change)="toggleWandGlobal()" />
-        Global (toute l'image)
+        {{ i18n.t('toolOption.global') }}
       </label>
     }
     @case ('drawShape') {
       <span class="opt-label">{{ labels['drawShape'] }}</span>
-      <span class="opt-label">Type</span>
+      <span class="opt-label">{{ i18n.t('toolOption.type') }}</span>
       <div class="opt-stroke-styles" role="group" aria-label="Type de forme">
         @for (type of shapeTypes; track type) {
           <button
@@ -194,7 +194,7 @@
           </button>
         }
       </div>
-      <span class="opt-label">Style</span>
+      <span class="opt-label">{{ i18n.t('toolOption.style') }}</span>
       <div class="opt-stroke-styles" role="group" aria-label="Style de trait">
         @for (style of strokeStyles; track style) {
           <button
@@ -215,7 +215,7 @@
         }
       </div>
       <label class="opt">
-        Épaisseur
+        {{ i18n.t('toolOption.thickness') }}
         <input
           class="opt-range"
           type="range"
@@ -236,7 +236,7 @@
       @if (shapeType() !== 'line') {
         <label class="opt-check">
           <input type="checkbox" [checked]="shapeFilled()" (change)="toggleShapeFilled()" />
-          Rempli
+          {{ i18n.t('toolOption.filled') }}
         </label>
       }
     }
@@ -264,19 +264,19 @@
         <button
           class="opt-mode"
           [class.active]="textBold()"
-          title="Gras"
+          [title]="i18n.t('toolOption.bold')"
           (click)="toggleTextBold()"
         ><b>B</b></button>
         <button
           class="opt-mode"
           [class.active]="textItalic()"
-          title="Italique"
+          [title]="i18n.t('toolOption.italic')"
           (click)="toggleTextItalic()"
         ><i>I</i></button>
         <button
           class="opt-mode"
           [class.active]="textUnderline()"
-          title="Souligné"
+          [title]="i18n.t('toolOption.underline')"
           (click)="toggleTextUnderline()"
         ><u>U</u></button>
       </div>
@@ -312,15 +312,15 @@
       </div>
       <label class="opt-check">
         <input type="checkbox" [checked]="textFill()" (change)="toggleTextFill()" />
-        Remplissage
+        {{ i18n.t('toolOption.fill') }}
       </label>
       <label class="opt-check">
         <input type="checkbox" [checked]="textOutline()" (change)="toggleTextOutline()" />
-        Contour
+        {{ i18n.t('toolOption.outline') }}
       </label>
       @if (textOutline()) {
         <label class="opt">
-          Épaisseur contour
+          {{ i18n.t('toolOption.outlineWidth') }}
           <input
             class="opt-range"
             type="range"
@@ -339,7 +339,7 @@
           />
         </label>
       }
-      <span class="opt-hint">Clic sur le canvas pour placer — Ctrl+Entrée pour valider</span>
+      <span class="opt-hint">{{ i18n.t('toolOptionHint.textHint') }}</span>
     }
   }
 </div>

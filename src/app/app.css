@@ -26,3 +26,78 @@
   overflow-y: auto;
   background: var(--surface);
 }
+
+.about-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.about-dialog {
+  background: #2d2d2d;
+  border: 1px solid #454545;
+  border-radius: 12px;
+  padding: 32px 40px;
+  text-align: center;
+  min-width: 280px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.about-logo {
+  width: 64px;
+  height: 64px;
+  margin-bottom: 12px;
+}
+
+.about-dialog h2 {
+  margin: 0 0 4px;
+  font-size: 20px;
+  color: #e0e0e0;
+}
+
+.about-version {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: #999;
+}
+
+.about-desc {
+  margin: 0 0 20px;
+  font-size: 13px;
+  color: #777;
+}
+
+.about-credit {
+  margin: 0 0 20px;
+  font-size: 12px;
+  color: #666;
+}
+
+.about-credit a {
+  color: #5b9bd5;
+  text-decoration: none;
+}
+
+.about-credit a:hover {
+  color: #7bb8e8;
+  text-decoration: underline;
+}
+
+.about-close {
+  padding: 6px 24px;
+  border: 1px solid #555;
+  border-radius: 6px;
+  background: #3c3c3c;
+  color: #d4d4d4;
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.about-close:hover {
+  background: #4c4c4c;
+}

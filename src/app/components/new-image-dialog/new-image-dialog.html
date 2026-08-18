@@ -1,31 +1,31 @@
 <div class="dialog-backdrop" (click)="onBackdropClick($event)">
   <div class="dialog">
-    <div class="dialog-header">Nouvelle image</div>
+    <div class="dialog-header">{{ i18n.t('newImage.title') }}</div>
 
     <div class="dialog-body">
       <div class="section">
-        <div class="section-title">Présélections</div>
+        <div class="section-title">{{ i18n.t('newImage.presets') }}</div>
         <div class="preset-list">
           @for (p of presets; track p.name) {
             <button
               class="preset-btn"
               [class.active]="selectedPreset() === p.name && !isCustom()"
               (click)="selectPreset(p.name)"
-            >{{ p.name }}</button>
+            >{{ presetLabel(p) }}</button>
           }
           <button
             class="preset-btn"
             [class.active]="isCustom()"
             (click)="selectCustom()"
-          >Personnalisé…</button>
+          >{{ i18n.t('newImage.custom') }}</button>
         </div>
       </div>
 
       <div class="section">
-        <div class="section-title">Taille</div>
+        <div class="section-title">{{ i18n.t('newImage.size') }}</div>
         <div class="size-row">
           <div class="size-field">
-            <label>Largeur</label>
+            <label>{{ i18n.t('newImage.width') }}</label>
             <input
               type="number"
               [value]="displayWidth"
@@ -36,7 +36,7 @@
           </div>
           <span class="size-sep">×</span>
           <div class="size-field">
-            <label>Hauteur</label>
+            <label>{{ i18n.t('newImage.height') }}</label>
             <input
               type="number"
               [value]="displayHeight"
@@ -46,7 +46,7 @@
             />
           </div>
           <div class="size-field">
-            <label>Unité</label>
+            <label>{{ i18n.t('newImage.unit') }}</label>
             <select [value]="unit()" [disabled]="!isCustom()" (change)="onUnitChange($event)">
               @for (u of units; track u) {
                 <option [value]="u" [selected]="u === unit()">{{ u }}</option>
@@ -64,8 +64,8 @@
     </div>
 
     <div class="dialog-footer">
-      <button class="btn" (click)="onCancel()">Annuler</button>
-      <button class="btn btn-primary" (click)="onConfirm()">Créer</button>
+      <button class="btn" (click)="onCancel()">{{ i18n.t('dialog.cancel') }}</button>
+      <button class="btn btn-primary" (click)="onConfirm()">{{ i18n.t('dialog.create') }}</button>
     </div>
   </div>
 </div>

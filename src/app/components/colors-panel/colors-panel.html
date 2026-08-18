@@ -6,7 +6,7 @@
       [style.background]="primaryCss()"
       (click)="setTarget('primary')"
       (contextmenu)="prevent($event)"
-      title="Couleur primaire (clic gauche)"
+      [title]="i18n.t('colors.primary')"
     ></button>
     <div class="cp-swatch-col">
       <button
@@ -15,9 +15,9 @@
         [style.background]="secondaryCss()"
         (click)="setTarget('secondary')"
         (contextmenu)="prevent($event)"
-        title="Couleur secondaire (clic droit)"
+        [title]="i18n.t('colors.secondary')"
       ></button>
-      <button class="cp-swap" (click)="swap()" title="Inverser (X)">&#8646;</button>
+      <button class="cp-swap" (click)="swap()" [title]="i18n.t('colors.swap')">&#8646;</button>
     </div>
   </div>
 
@@ -43,13 +43,13 @@
   </div>
 
   <div class="cp-alpha">
-    <label>Opacité</label>
+    <label>{{ i18n.t('colors.opacity') }}</label>
     <input type="range" min="0" max="100" [value]="alphaPct()" (input)="onAlpha($event)" />
     <span>{{ alphaPct() }}%</span>
   </div>
 
   <div class="cp-hex">
-    <label>Hex</label>
+    <label>{{ i18n.t('colors.hex') }}</label>
     <input [value]="targetHex()" (change)="onHex($event)" spellcheck="false" />
   </div>
 
@@ -72,7 +72,7 @@
   </div>
 
   <div class="cp-recent">
-    <span class="cp-recent-title">Récentes</span>
+    <span class="cp-recent-title">{{ i18n.t('colors.recent') }}</span>
     <div class="cp-recent-row">
       @for (c of recent(); track c) {
         <button class="cp-recent-swatch" [style.background]="c" (click)="useRecent(c)" [title]="c"></button>

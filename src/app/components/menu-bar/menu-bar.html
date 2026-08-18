@@ -25,6 +25,7 @@
                 [disabled]="isDisabled(item)"
                 (click)="select(item)"
               >
+                <span class="item-check">{{ isChecked(item) ? '\u2713' : '' }}</span>
                 <span class="item-label">{{ item.label }}</span>
                 @if (item.shortcut) {
                   <span class="item-shortcut">{{ item.shortcut }}</span>

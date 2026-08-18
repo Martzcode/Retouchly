@@ -1,50 +1,53 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { SelectionMode, ShapeType, StrokeStyle, TextAlign, Tool } from '../types';
+import { I18nService } from './i18n.service';
 
-export const TOOL_LABELS: Record<Tool, string> = {
-  pencil: 'Crayon',
-  brush: 'Pinceau',
-  eraser: 'Gomme',
-  pipette: 'Pipette',
-  selectRect: 'Sélection rectangle',
-  selectEllipse: 'Sélection ellipse',
-  lasso: 'Lasso',
-  wand: 'Baguette magique',
-  moveSelection: 'Déplacer la sélection',
-  moveObject: 'Déplacer l\u2019objet sélectionné',
-  drawShape: 'Forme',
-  text: 'Texte',
+const TOOL_KEYS: Record<Tool, string> = {
+  pencil: 'tool.pencil',
+  brush: 'tool.brush',
+  eraser: 'tool.eraser',
+  pipette: 'tool.pipette',
+  selectRect: 'tool.selectRect',
+  selectEllipse: 'tool.selectEllipse',
+  lasso: 'tool.lasso',
+  wand: 'tool.wand',
+  moveSelection: 'tool.moveSelection',
+  moveObject: 'tool.moveObject',
+  drawShape: 'tool.drawShape',
+  text: 'tool.text',
 };
 
-export const TEXT_ALIGN_LABELS: Record<TextAlign, string> = {
-  left: 'Gauche',
-  center: 'Centre',
-  right: 'Droite',
+const TEXT_ALIGN_KEYS: Record<TextAlign, string> = {
+  left: 'textAlign.left',
+  center: 'textAlign.center',
+  right: 'textAlign.right',
 };
 
-export const SHAPE_TYPE_LABELS: Record<ShapeType, string> = {
-  rectangle: 'Rectangle',
-  ellipse: 'Ellipse',
-  line: 'Ligne',
-  polygon: 'Polygone',
+const SHAPE_TYPE_KEYS: Record<ShapeType, string> = {
+  rectangle: 'shapeType.rect',
+  ellipse: 'shapeType.ellipse',
+  line: 'shapeType.line',
+  polygon: 'shapeType.polygon',
 };
 
-export const STROKE_STYLE_LABELS: Record<StrokeStyle, string> = {
-  solid: 'Plein',
-  dashed: 'Tirets',
-  dotted: 'Pointillé',
+const STROKE_STYLE_KEYS: Record<StrokeStyle, string> = {
+  solid: 'strokeStyle.solid',
+  dashed: 'strokeStyle.dashed',
+  dotted: 'strokeStyle.dotted',
 };
 
-export const SELECTION_MODE_LABELS: Record<SelectionMode, string> = {
-  replace: 'Remplacer',
-  add: 'Ajouter',
-  subtract: 'Soustraire',
-  intersect: 'Intersection',
-  xor: 'Xor',
+const SELECTION_MODE_KEYS: Record<SelectionMode, string> = {
+  replace: 'selectionMode.replace',
+  add: 'selectionMode.add',
+  subtract: 'selectionMode.subtract',
+  intersect: 'selectionMode.intersect',
+  xor: 'selectionMode.xor',
 };
 
 @Injectable({ providedIn: 'root' })
 export class ToolService {
+  private readonly i18n = inject(I18nService);
+
   private readonly _activeTool = signal<Tool>('brush');
   private readonly _brushSize = signal(4);
   private readonly _brushHardness = signal(100);
@@ -84,6 +87,40 @@ export class ToolService {
   readonly textOutlineWidth = this._textOutlineWidth.asReadonly();
   readonly textFill = this._textFill.asReadonly();
   readonly textOutline = this._textOutline.asReadonly();
+
+  get toolLabels(): Record<Tool, string> {
+    return Object.fromEntries(
+      Object.entries(TOOL_KEYS).map(([k, v]) => [k, this.i18n.t(v)])
+    ) as Record<Tool, string>;
+  }
+
+  get textAlignLabels(): Record<TextAlign, string> {
+    return Object.fromEntries(
+      Object.entries(TEXT_ALIGN_KEYS).map(([k, v]) => [k, this.i18n.t(v)])
+    ) as Record<TextAlign, string>;
+  }
+
+  get shapeTypeLabels(): Record<ShapeType, string> {
+    return Object.fromEntries(
+      Object.entries(SHAPE_TYPE_KEYS).map(([k, v]) => [k, this.i18n.t(v)])
+    ) as Record<ShapeType, string>;
+  }
+
+  get strokeStyleLabels(): Record<StrokeStyle, string> {
+    return Object.fromEntries(
+      Object.entries(STROKE_STYLE_KEYS).map(([k, v]) => [k, this.i18n.t(v)])
+    ) as Record<StrokeStyle, string>;
+  }
+
+  get selectionModeLabels(): Record<SelectionMode, string> {
+    return Object.fromEntries(
+      Object.entries(SELECTION_MODE_KEYS).map(([k, v]) => [k, this.i18n.t(v)])
+    ) as Record<SelectionMode, string>;
+  }
+
+  toolLabel(tool: Tool): string {
+    return this.i18n.t(TOOL_KEYS[tool]);
+  }
 
   setTool(tool: Tool): void {
     this._activeTool.set(tool);

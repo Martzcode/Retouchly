@@ -3,13 +3,16 @@ import {
   computed,
   ElementRef,
   EventEmitter,
+  HostListener,
   OnDestroy,
   Output,
   ViewChild,
   inject,
   signal,
 } from '@angular/core';
+import { DecimalPipe } from '@angular/common';
 import { ColorsService } from '../../services/colors.service';
+import { I18nService } from '../../services/i18n.service';
 import { LayerService } from '../../services/layer.service';
 import { ToolService } from '../../services/tool.service';
 import { LayerSnapshot, SelectionMode, ShapeType, StrokeStyle } from '../../types';
@@ -45,15 +48,21 @@ interface Point {
 
 @Component({
   selector: 'app-canvas',
-  imports: [],
+  imports: [DecimalPipe],
   templateUrl: './canvas.html',
   styleUrl: './canvas.css',
 })
 export class CanvasComponent implements OnDestroy {
-  @ViewChild('stage', { static: true }) stageRef!: ElementRef<HTMLElement>;
+  protected readonly i18n = inject(I18nService);
+  @ViewChild('stage', { static: true }) stageRef!: ElementRef<HTMLDivElement>;
+  @ViewChild('scrollArea', { static: true }) scrollAreaRef!: ElementRef<HTMLDivElement>;
   @ViewChild('wrap', { static: true }) wrapRef!: ElementRef<HTMLElement>;
   @ViewChild('canvas', { static: true }) canvasRef!: ElementRef<HTMLCanvasElement>;
   @ViewChild('seloverlay', { static: true }) selOverlayRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('gridOverlay', { static: true }) gridOverlayRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('navCanvas', { static: true }) navCanvasRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('ruleH', { static: true }) ruleHRef!: ElementRef<HTMLCanvasElement>;
+  @ViewChild('ruleV', { static: true }) ruleVRef!: ElementRef<HTMLCanvasElement>;
 
   @Output() positionChange = new EventEmitter<{ x: number; y: number }>();
   @Output() dirty = new EventEmitter<void>();
@@ -125,6 +134,15 @@ export class CanvasComponent implements OnDestroy {
   });
   private textEditId = 0;
 
+  readonly showRules = signal(false);
+  readonly showGrid = signal(false);
+  readonly gridSize = signal(10);
+  readonly showNavigator = signal(false);
+  ruleUnit = 'px';
+  private panning = false;
+  private panStart = { x: 0, y: 0, scrollLeft: 0, scrollTop: 0 };
+  private spaceHeld = false;
+
   private readonly activePointers = new Map<number, { x: number; y: number }>();
   private pinching = false;
   private pinchDistance = 0;
@@ -132,17 +150,35 @@ export class CanvasComponent implements OnDestroy {
   ngAfterViewInit(): void {
     this.ctx = this.canvasRef.nativeElement.getContext('2d')!;
     this.selCtx = this.selOverlayRef.nativeElement.getContext('2d')!;
-    const stage = this.stageRef.nativeElement;
-    stage.addEventListener('wheel', this.onStageWheel, { passive: false });
+    const scrollArea = this.scrollAreaRef.nativeElement;
+    scrollArea.addEventListener('wheel', this.onStageWheel, { passive: false });
+    scrollArea.addEventListener('scroll', this.onStageScroll);
     window.addEventListener('wheel', this.onWindowWheel, { passive: false });
     window.addEventListener('gesturestart', this.preventGesture, { passive: false });
     window.addEventListener('gesturechange', this.preventGesture, { passive: false });
     this.setupTransparentCanvas(320, 240);
   }
 
+  @HostListener('window:keydown', ['$event'])
+  onGlobalKeydown(event: KeyboardEvent): void {
+    if (event.code === 'Space' && !event.repeat) {
+      this.spaceHeld = true;
+      this.stageRef.nativeElement.style.cursor = 'grab';
+    }
+  }
+
+  @HostListener('window:keyup', ['$event'])
+  onGlobalKeyup(event: KeyboardEvent): void {
+    if (event.code === 'Space') {
+      this.spaceHeld = false;
+      this.stageRef.nativeElement.style.cursor = '';
+    }
+  }
+
   ngOnDestroy(): void {
-    const stage = this.stageRef.nativeElement;
-    stage.removeEventListener('wheel', this.onStageWheel);
+    const scrollArea = this.scrollAreaRef.nativeElement;
+    scrollArea.removeEventListener('wheel', this.onStageWheel);
+    scrollArea.removeEventListener('scroll', this.onStageScroll);
     window.removeEventListener('wheel', this.onWindowWheel);
     window.removeEventListener('gesturestart', this.preventGesture);
     window.removeEventListener('gesturechange', this.preventGesture);
@@ -194,6 +230,9 @@ export class CanvasComponent implements OnDestroy {
     if (this.shapePreview) {
       this.drawShapePreview();
     }
+    this.renderGrid();
+    this.renderNavigator();
+    this.renderRules();
   }
 
   zoomIn(): void {
@@ -206,6 +245,49 @@ export class CanvasComponent implements OnDestroy {
 
   zoomTo(level: number): void {
     this.adjustZoom(level / this.zoom());
+  }
+
+  zoomToFit(): void {
+    if (!this.hasDocument) {
+      return;
+    }
+    const scrollArea = this.scrollAreaRef.nativeElement;
+    const pad = 40;
+    const availW = scrollArea.clientWidth - pad;
+    const availH = scrollArea.clientHeight - pad;
+    const z = Math.min(availW / this.nativeWidth, availH / this.nativeHeight, 8);
+    this.zoom.set(z);
+    this.applyZoom();
+    this.zoomChange.emit(z);
+    scrollArea.scrollLeft = (this.nativeWidth * z - scrollArea.clientWidth) / 2;
+    scrollArea.scrollTop = (this.nativeHeight * z - scrollArea.clientHeight) / 2;
+    this.renderGrid();
+    this.renderRules();
+    this.renderNavigator();
+  }
+
+  toggleRules(): void {
+    this.showRules.update((v) => !v);
+    this.renderRules();
+  }
+
+  toggleGrid(): void {
+    this.showGrid.update((v) => !v);
+    this.renderGrid();
+  }
+
+  toggleNavigator(): void {
+    this.showNavigator.update((v) => !v);
+    this.renderNavigator();
+  }
+
+  setGridSize(size: number): void {
+    this.gridSize.set(Math.max(1, size));
+    this.renderGrid();
+  }
+
+  setRuleUnit(unit: string): void {
+    this.ruleUnit = unit;
   }
 
   clearSelection(): void {
@@ -466,6 +548,13 @@ export class CanvasComponent implements OnDestroy {
       return;
     }
     event.preventDefault();
+
+    // Pan: middle button or space+left
+    if (event.button === 1 || (event.button === 0 && this.spaceHeld)) {
+      this.startPan(event);
+      return;
+    }
+
     this.activePointers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (this.activePointers.size >= 2) {
       this.drawing = false;
@@ -486,12 +575,11 @@ export class CanvasComponent implements OnDestroy {
     }
     if (tool === 'text') {
       this.confirmText();
-      const z = this.zoom();
       this.textEditId++;
       this.textEdit.set({
         id: this.textEditId,
-        x: pos.x * z,
-        y: pos.y * z,
+        x: pos.x,
+        y: pos.y,
         font: this.tools.textFont(),
         size: this.tools.textSize(),
         bold: this.tools.textBold(),
@@ -556,6 +644,10 @@ export class CanvasComponent implements OnDestroy {
   }
 
   protected onPointerMove(event: PointerEvent): void {
+    if (this.panning) {
+      this.onPanMove(event);
+      return;
+    }
     if (!this.hasDocument) {
       return;
     }
@@ -614,6 +706,10 @@ export class CanvasComponent implements OnDestroy {
   }
 
   protected onPointerUp(event: PointerEvent): void {
+    if (this.panning) {
+      this.endPan();
+      return;
+    }
     this.activePointers.delete(event.pointerId);
     if (this.activePointers.size < 2) {
       this.pinching = false;
@@ -1328,11 +1424,10 @@ export class CanvasComponent implements OnDestroy {
   private updateToolPreview(pos: Point): void {
     const tool = this.tool();
     if (tool === 'pencil' || tool === 'brush' || tool === 'eraser') {
-      const z = this.zoom();
-      const d = Math.max(1, this.tools.brushSize() * z);
+      const d = Math.max(1, this.tools.brushSize());
       this.toolPreview.set({
-        x: pos.x * z - d / 2,
-        y: pos.y * z - d / 2,
+        x: pos.x - d / 2,
+        y: pos.y - d / 2,
         size: d,
         square: tool === 'pencil',
       });
@@ -1430,6 +1525,11 @@ export class CanvasComponent implements OnDestroy {
     this.pinchDistance = dist;
   }
 
+  private onStageScroll = (): void => {
+    this.renderRules();
+    this.renderNavigator();
+  };
+
   private onStageWheel = (event: WheelEvent): void => {
     if ((event.ctrlKey || event.metaKey) && this.hasDocument) {
       event.preventDefault();
@@ -1448,6 +1548,183 @@ export class CanvasComponent implements OnDestroy {
     event.preventDefault();
   };
 
+  private renderGrid(): void {
+    const el = this.gridOverlayRef?.nativeElement;
+    if (!el) {
+      return;
+    }
+    if (!this.showGrid() || !this.hasDocument) {
+      el.style.display = 'none';
+      return;
+    }
+    el.style.display = '';
+    const wrap = this.wrapRef?.nativeElement;
+    if (!wrap) {
+      return;
+    }
+    const z = this.zoom();
+    const w = Math.round(this.nativeWidth * z);
+    const h = Math.round(this.nativeHeight * z);
+    el.width = w;
+    el.height = h;
+    el.style.width = w + 'px';
+    el.style.height = h + 'px';
+    el.style.left = wrap.offsetLeft + 'px';
+    el.style.top = wrap.offsetTop + 'px';
+    const ctx = el.getContext('2d')!;
+    ctx.clearRect(0, 0, w, h);
+    const nativeSize = this.gridSize();
+    if (nativeSize < 1) {
+      return;
+    }
+    const size = nativeSize * z;
+    ctx.strokeStyle = 'rgba(128,128,128,0.35)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let x = 0; x <= w; x += size) {
+      const pos = Math.round(x) + 0.5;
+      ctx.moveTo(pos, 0);
+      ctx.lineTo(pos, h);
+    }
+    for (let y = 0; y <= h; y += size) {
+      const pos = Math.round(y) + 0.5;
+      ctx.moveTo(0, pos);
+      ctx.lineTo(w, pos);
+    }
+    ctx.stroke();
+  }
+
+  private renderNavigator(): void {
+    if (!this.showNavigator() || !this.hasDocument) {
+      return;
+    }
+    const el = this.navCanvasRef?.nativeElement;
+    if (!el) {
+      return;
+    }
+    const maxW = 160;
+    const maxH = 120;
+    const scale = Math.min(maxW / this.nativeWidth, maxH / this.nativeHeight, 1);
+    const dw = Math.round(this.nativeWidth * scale);
+    const dh = Math.round(this.nativeHeight * scale);
+    el.width = dw;
+    el.height = dh;
+    const ctx = el.getContext('2d')!;
+    ctx.imageSmoothingEnabled = true;
+    ctx.clearRect(0, 0, dw, dh);
+    ctx.drawImage(this.canvasRef.nativeElement, 0, 0, dw, dh);
+    const scrollArea = this.scrollAreaRef.nativeElement;
+    const z = this.zoom();
+    const viewX = scrollArea.scrollLeft / z * scale;
+    const viewY = scrollArea.scrollTop / z * scale;
+    const viewW = scrollArea.clientWidth / z * scale;
+    const viewH = scrollArea.clientHeight / z * scale;
+    ctx.strokeStyle = '#ff0000';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(viewX, viewY, viewW, viewH);
+  }
+
+  private renderRules(): void {
+    if (!this.showRules() || !this.hasDocument) {
+      return;
+    }
+    const hCanvas = this.ruleHRef?.nativeElement;
+    const vCanvas = this.ruleVRef?.nativeElement;
+    if (!hCanvas || !vCanvas) {
+      return;
+    }
+    const z = this.zoom();
+    const unit = this.ruleUnit;
+    const pxPerUnit = unit === 'cm' ? 96 / 2.54 : unit === 'in' ? 96 : 1;
+    const scrollArea = this.scrollAreaRef.nativeElement;
+    const scrollX = scrollArea.scrollLeft;
+    const scrollY = scrollArea.scrollTop;
+    const viewW = scrollArea.clientWidth;
+    const viewH = scrollArea.clientHeight;
+
+    let baseStep = pxPerUnit;
+    const minPixelGap = 60;
+    while (baseStep * z < minPixelGap) {
+      baseStep *= 2;
+    }
+    const mag = Math.pow(10, Math.floor(Math.log10(baseStep)));
+    const nice = baseStep / mag;
+    if (nice <= 1) {
+      baseStep = mag;
+    } else if (nice <= 2) {
+      baseStep = 2 * mag;
+    } else if (nice <= 5) {
+      baseStep = 5 * mag;
+    } else {
+      baseStep = 10 * mag;
+    }
+
+    hCanvas.width = viewW;
+    hCanvas.height = 24;
+    const hCtx = hCanvas.getContext('2d')!;
+    hCtx.fillStyle = '#2d2d2d';
+    hCtx.fillRect(0, 0, viewW, 24);
+    hCtx.strokeStyle = '#888';
+    hCtx.fillStyle = '#aaa';
+    hCtx.font = '9px sans-serif';
+    hCtx.textAlign = 'center';
+    hCtx.beginPath();
+    const startPx = Math.floor(scrollX / z / baseStep) * baseStep;
+    const endPx = Math.ceil((scrollX + viewW) / z / baseStep) * baseStep;
+    for (let px = startPx; px <= this.nativeWidth && px <= endPx; px += baseStep) {
+      if (px < 0) continue;
+      const x = Math.round(px * z - scrollX) + 0.5;
+      hCtx.moveTo(x, 14);
+      hCtx.lineTo(x, 24);
+      const label = unit === 'px' ? `${Math.round(px)}` : (px / pxPerUnit).toFixed(1);
+      hCtx.fillText(label, x, 11);
+    }
+    const minorStep = baseStep / 2;
+    if (minorStep * z >= 10) {
+      for (let px = startPx; px <= this.nativeWidth && px <= endPx; px += minorStep) {
+        if (px < 0 || px % baseStep === 0) continue;
+        const x = Math.round(px * z - scrollX) + 0.5;
+        hCtx.moveTo(x, 18);
+        hCtx.lineTo(x, 24);
+      }
+    }
+    hCtx.stroke();
+
+    vCanvas.width = 24;
+    vCanvas.height = viewH;
+    const vCtx = vCanvas.getContext('2d')!;
+    vCtx.fillStyle = '#2d2d2d';
+    vCtx.fillRect(0, 0, 24, viewH);
+    vCtx.strokeStyle = '#888';
+    vCtx.fillStyle = '#aaa';
+    vCtx.font = '9px sans-serif';
+    vCtx.beginPath();
+    const startY = Math.floor(scrollY / z / baseStep) * baseStep;
+    const endY = Math.ceil((scrollY + viewH) / z / baseStep) * baseStep;
+    for (let py = startY; py <= this.nativeHeight && py <= endY; py += baseStep) {
+      if (py < 0) continue;
+      const y = Math.round(py * z - scrollY) + 0.5;
+      vCtx.moveTo(14, y);
+      vCtx.lineTo(24, y);
+      const label = unit === 'px' ? `${Math.round(py)}` : (py / pxPerUnit).toFixed(1);
+      vCtx.save();
+      vCtx.translate(10, y);
+      vCtx.rotate(-Math.PI / 2);
+      vCtx.textAlign = 'center';
+      vCtx.fillText(label, 0, 0);
+      vCtx.restore();
+    }
+    if (minorStep * z >= 10) {
+      for (let py = startY; py <= this.nativeHeight && py <= endY; py += minorStep) {
+        if (py < 0 || py % baseStep === 0) continue;
+        const y = Math.round(py * z - scrollY) + 0.5;
+        vCtx.moveTo(18, y);
+        vCtx.lineTo(24, y);
+      }
+    }
+    vCtx.stroke();
+  }
+
   private adjustZoom(factor: number): void {
     const next = Math.min(8, Math.max(0.05, this.zoom() * factor));
     if (next === this.zoom()) {
@@ -1456,6 +1733,38 @@ export class CanvasComponent implements OnDestroy {
     this.zoom.set(next);
     this.applyZoom();
     this.zoomChange.emit(next);
+    this.renderGrid();
+    this.renderRules();
+    this.renderNavigator();
+  }
+
+  private startPan(event: PointerEvent): void {
+    this.panning = true;
+    const scrollArea = this.scrollAreaRef.nativeElement;
+    this.panStart = {
+      x: event.clientX,
+      y: event.clientY,
+      scrollLeft: scrollArea.scrollLeft,
+      scrollTop: scrollArea.scrollTop,
+    };
+    this.stageRef.nativeElement.style.cursor = 'grabbing';
+  }
+
+  private onPanMove(event: PointerEvent): void {
+    if (!this.panning) {
+      return;
+    }
+    const scrollArea = this.scrollAreaRef.nativeElement;
+    scrollArea.scrollLeft = this.panStart.scrollLeft - (event.clientX - this.panStart.x);
+    scrollArea.scrollTop = this.panStart.scrollTop - (event.clientY - this.panStart.y);
+  }
+
+  private endPan(): void {
+    if (!this.panning) {
+      return;
+    }
+    this.panning = false;
+    this.stageRef.nativeElement.style.cursor = '';
   }
 
   private applyZoom(): void {

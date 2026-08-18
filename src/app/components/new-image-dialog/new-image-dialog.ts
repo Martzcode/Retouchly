@@ -1,5 +1,6 @@
-import { Component, EventEmitter, Output, signal } from '@angular/core';
+import { Component, EventEmitter, Output, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { I18nService } from '../../services/i18n.service';
 
 interface Preset {
   name: string;
@@ -37,11 +38,20 @@ const PRESETS: Preset[] = [
   styleUrl: './new-image-dialog.css',
 })
 export class NewImageDialogComponent {
+  protected readonly i18n = inject(I18nService);
+
   @Output() confirm = new EventEmitter<{ width: number; height: number }>();
   @Output() cancel = new EventEmitter<void>();
 
   readonly presets = PRESETS;
   readonly units: Unit[] = ['px', 'in', 'cm', 'mm'];
+
+  presetLabel(p: Preset): string {
+    if (p.name === 'Carré (1080×1080)') {
+      return this.i18n.t('newImage.presetSquare');
+    }
+    return p.name;
+  }
 
   readonly selectedPreset = signal<string>(PRESETS[1].name);
   readonly unit = signal<Unit>('px');

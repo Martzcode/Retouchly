@@ -3,57 +3,57 @@
     <div class="dialog" (click)="$event.stopPropagation()">
       @switch (type) {
         @case ('brightnessContrast') {
-          <h3 class="dialog-title">Luminosité / Contraste</h3>
+          <h3 class="dialog-title">{{ i18n.t('adjustment.brightnessContrast') }}</h3>
           <label class="dialog-slider">
-            Luminosité
+            {{ i18n.t('adjustment.brightness') }}
             <input type="range" min="-100" max="100" [(ngModel)]="params.brightness" (input)="onInput()" />
             <span class="slider-val">{{ params.brightness }}</span>
           </label>
           <label class="dialog-slider">
-            Contraste
+            {{ i18n.t('adjustment.contrast') }}
             <input type="range" min="-100" max="100" [(ngModel)]="params.contrast" (input)="onInput()" />
             <span class="slider-val">{{ params.contrast }}</span>
           </label>
         }
         @case ('hueSaturationLightness') {
-          <h3 class="dialog-title">Teinte / Saturation / Luminosité</h3>
+          <h3 class="dialog-title">{{ i18n.t('adjustment.hueSatLight') }}</h3>
           <label class="dialog-slider">
-            Teinte (°)
+            {{ i18n.t('adjustment.hue') }}
             <input type="range" min="-180" max="180" [(ngModel)]="params.hue" (input)="onInput()" />
             <span class="slider-val">{{ params.hue }}°</span>
           </label>
           <label class="dialog-slider">
-            Saturation
+            {{ i18n.t('adjustment.saturation') }}
             <input type="range" min="0" max="3" step="0.05" [(ngModel)]="params.saturation" (input)="onInput()" />
             <span class="slider-val">{{ params.saturation | number:'1.1-1' }}</span>
           </label>
           <label class="dialog-slider">
-            Luminosité
+            {{ i18n.t('adjustment.brightness') }}
             <input type="range" min="0" max="2" step="0.05" [(ngModel)]="params.lightness" (input)="onInput()" />
             <span class="slider-val">{{ params.lightness | number:'1.1-1' }}</span>
           </label>
         }
         @case ('posterize') {
-          <h3 class="dialog-title">Postériser</h3>
+          <h3 class="dialog-title">{{ i18n.t('adjustment.posterize') }}</h3>
           <label class="dialog-slider">
-            Niveaux
+            {{ i18n.t('adjustment.levels') }}
             <input type="range" min="2" max="64" [(ngModel)]="params.posterizeLevels" (input)="onInput()" />
             <span class="slider-val">{{ params.posterizeLevels }}</span>
           </label>
         }
         @case ('threshold') {
-          <h3 class="dialog-title">Seuil</h3>
+          <h3 class="dialog-title">{{ i18n.t('adjustment.thresholdTitle') }}</h3>
           <label class="dialog-slider">
-            Seuil
+            {{ i18n.t('adjustment.threshold') }}
             <input type="range" min="0" max="255" [(ngModel)]="params.thresholdCutoff" (input)="onInput()" />
             <span class="slider-val">{{ params.thresholdCutoff }}</span>
           </label>
         }
       }
       <div class="dialog-actions">
-        <button class="dialog-btn" (click)="reset()">Réinitialiser</button>
+        <button class="dialog-btn" (click)="reset()">{{ i18n.t('dialog.reset') }}</button>
         <div class="dialog-actions-right">
-          <button class="dialog-btn" (click)="cancel()">Annuler</button>
+          <button class="dialog-btn" (click)="cancel()">{{ i18n.t('dialog.cancel') }}</button>
           <button class="dialog-btn primary" (click)="confirm()">OK</button>
         </div>
       </div>

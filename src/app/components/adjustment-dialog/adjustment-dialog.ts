@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, injec
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { AdjustmentsService } from '../../services/adjustments.service';
+import { I18nService } from '../../services/i18n.service';
 import { LayerService } from '../../services/layer.service';
 
 export type AdjustmentType =
@@ -44,6 +45,7 @@ export class AdjustmentDialogComponent implements OnChanges {
 
   private readonly adj = inject(AdjustmentsService);
   private readonly layers = inject(LayerService);
+  protected readonly i18n = inject(I18nService);
 
   params = { ...DEFAULTS };
 

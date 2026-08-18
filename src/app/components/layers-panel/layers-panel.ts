@@ -1,7 +1,8 @@
 import { Component, EventEmitter, inject, Output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { I18nService } from '../../services/i18n.service';
 import { LayerService } from '../../services/layer.service';
-import { BlendMode, BLEND_MODES, BLEND_MODE_LABELS, CommandEvent } from '../../types';
+import { BlendMode, BLEND_MODES, getBlendModeLabel, CommandEvent } from '../../types';
 
 @Component({
   selector: 'app-layers-panel',
@@ -11,6 +12,7 @@ import { BlendMode, BLEND_MODES, BLEND_MODE_LABELS, CommandEvent } from '../../t
   styleUrl: './layers-panel.css',
 })
 export class LayersPanelComponent {
+  protected readonly i18n = inject(I18nService);
   protected readonly layers = inject(LayerService);
   private readonly thumbs = new Map<string, HTMLCanvasElement>();
   private thumbTimer: ReturnType<typeof setTimeout> | null = null;
@@ -34,7 +36,10 @@ export class LayersPanelComponent {
   }
 
   readonly blendModes = BLEND_MODES;
-  readonly blendLabels = BLEND_MODE_LABELS;
+
+  blendLabel(mode: BlendMode): string {
+    return getBlendModeLabel(mode, this.i18n);
+  }
 
   get reversedLayers() {
     return [...this.layers.layers()].reverse();

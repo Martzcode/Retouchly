@@ -1,5 +1,6 @@
 import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { I18nService } from '../../services/i18n.service';
 import { LayerService } from '../../services/layer.service';
 
 @Component({
@@ -14,6 +15,7 @@ export class ResizeCanvasDialogComponent implements OnChanges {
   @Output() cancelled = new EventEmitter<void>();
 
   private readonly layers = inject(LayerService);
+  protected readonly i18n = inject(I18nService);
 
   width = 0;
   height = 0;

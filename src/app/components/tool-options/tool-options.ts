@@ -1,6 +1,7 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { invoke } from '@tauri-apps/api/core';
-import { ToolService, TOOL_LABELS, SELECTION_MODE_LABELS, SHAPE_TYPE_LABELS, STROKE_STYLE_LABELS, TEXT_ALIGN_LABELS } from '../../services/tool.service';
+import { I18nService } from '../../services/i18n.service';
+import { ToolService } from '../../services/tool.service';
 import { SelectionMode, ShapeType, StrokeStyle, TextAlign } from '../../types';
 
 const FALLBACK_FONTS = [
@@ -17,6 +18,7 @@ const FALLBACK_FONTS = [
 })
 export class ToolOptionsComponent implements OnInit {
   private readonly tools = inject(ToolService);
+  protected readonly i18n = inject(I18nService);
 
   readonly activeTool = this.tools.activeTool;
   readonly brushSize = this.tools.brushSize;
@@ -38,11 +40,11 @@ export class ToolOptionsComponent implements OnInit {
   readonly textFill = this.tools.textFill;
   readonly textOutline = this.tools.textOutline;
 
-  protected labels = TOOL_LABELS;
-  protected modeLabels = SELECTION_MODE_LABELS;
-  protected shapeLabels = SHAPE_TYPE_LABELS;
-  protected strokeStyleLabels = STROKE_STYLE_LABELS;
-  protected alignLabels = TEXT_ALIGN_LABELS;
+  protected get labels() { return this.tools.toolLabels; }
+  protected get modeLabels() { return this.tools.selectionModeLabels; }
+  protected get shapeLabels() { return this.tools.shapeTypeLabels; }
+  protected get strokeStyleLabels() { return this.tools.strokeStyleLabels; }
+  protected get alignLabels() { return this.tools.textAlignLabels; }
   protected readonly modes: SelectionMode[] = ['replace', 'add', 'subtract', 'intersect', 'xor'];
   protected readonly shapeTypes: ShapeType[] = ['rectangle', 'ellipse', 'line', 'polygon'];
   protected readonly strokeStyles: StrokeStyle[] = ['solid', 'dashed', 'dotted'];

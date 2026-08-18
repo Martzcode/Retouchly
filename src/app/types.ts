@@ -76,24 +76,29 @@ export const BLEND_MODES: BlendMode[] = [
   'luminosity',
 ];
 
-export const BLEND_MODE_LABELS: Record<BlendMode, string> = {
-  'source-over': 'Normal',
-  'multiply': 'Multiplier',
-  'screen': 'Écran',
-  'overlay': 'Incrustation',
-  'darken': 'Lumière tamisée',
-  'lighten': 'Lumière crue',
-  'color-dodge': 'Dodge',
-  'color-burn': 'Burn',
-  'hard-light': 'Lumière dure',
-  'soft-light': 'Lumière douce',
-  'difference': 'Différence',
-  'exclusion': 'Exclusion',
-  'hue': 'Teinte',
-  'saturation': 'Saturation',
-  'color': 'Couleur',
-  'luminosity': 'Luminosité',
+export const BLEND_MODE_I18N_KEYS: Record<BlendMode, string> = {
+  'source-over': 'blendMode.normal',
+  'multiply': 'blendMode.multiply',
+  'screen': 'blendMode.screen',
+  'overlay': 'blendMode.overlay',
+  'darken': 'blendMode.darken',
+  'lighten': 'blendMode.lighten',
+  'color-dodge': 'blendMode.colorDodge',
+  'color-burn': 'blendMode.colorBurn',
+  'hard-light': 'blendMode.hardLight',
+  'soft-light': 'blendMode.softLight',
+  'difference': 'blendMode.difference',
+  'exclusion': 'blendMode.exclusion',
+  'hue': 'blendMode.hue',
+  'saturation': 'blendMode.saturation',
+  'color': 'blendMode.color',
+  'luminosity': 'blendMode.luminosity',
 };
+
+export function getBlendModeLabel(mode: BlendMode, i18n: { t(key: string): string }): string {
+  const key = BLEND_MODE_I18N_KEYS[mode];
+  return key ? i18n.t(key) : mode;
+}
 
 export interface LayerSnapshot {
   id: string;

@@ -1,5 +1,6 @@
-import { Injectable, signal } from '@angular/core';
+import { inject, Injectable, signal } from '@angular/core';
 import { BlendMode, LayerSnapshot } from '../types';
+import { I18nService } from './i18n.service';
 
 export interface Layer {
   id: string;
@@ -32,6 +33,7 @@ function createBuffer(w: number, h: number): { canvas: HTMLCanvasElement; ctx: C
 
 @Injectable({ providedIn: 'root' })
 export class LayerService {
+  private readonly i18n = inject(I18nService);
   private _layers = signal<Layer[]>([]);
   private _activeLayerId = signal('');
   private _width = 0;
@@ -118,7 +120,7 @@ export class LayerService {
     ctx.drawImage(src.canvas, 0, 0);
     const dup: Layer = {
       id: newId,
-      name: src.name + ' copie',
+      name: src.name + this.i18n.t('layers.copy'),
       visible: src.visible,
       locked: false,
       opacity: src.opacity,
@@ -210,7 +212,7 @@ export class LayerService {
     }
     const flat: Layer = {
       id: makeId(),
-      name: 'Arrière-plan',
+      name: this.i18n.t('layers.background'),
       visible: true,
       locked: false,
       opacity: 100,
@@ -573,7 +575,7 @@ export class LayerService {
 
   private nextLayerName(): string {
     const list = this._layers();
-    const base = 'Calque';
+    const base = this.i18n.t('layers.layer');
     let n = 1;
     while (list.some((l) => l.name === `${base} ${n}`)) {
       n++;

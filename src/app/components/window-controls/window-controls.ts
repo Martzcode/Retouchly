@@ -1,5 +1,6 @@
-import { Component, OnDestroy, OnInit, signal } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { I18nService } from '../../services/i18n.service';
 
 @Component({
   selector: 'app-window-controls',
@@ -8,6 +9,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window';
   styleUrl: './window-controls.css',
 })
 export class WindowControlsComponent implements OnInit, OnDestroy {
+  protected readonly i18n = inject(I18nService);
   protected readonly isMaximized = signal(false);
 
   private readonly win = getCurrentWindow();

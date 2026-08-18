@@ -18,10 +18,14 @@
     [undoEnabled]="undoEnabled"
     [redoEnabled]="redoEnabled"
     [layersEnabled]="layersEnabled"
+    [viewRulesChecked]="viewRulesChecked"
+    [viewGridChecked]="viewGridChecked"
+    [viewNavigatorChecked]="viewNavigatorChecked"
+    [currentLang]="currentLang"
   ></app-menu-bar>
   <div class="title-center" data-tauri-drag-region>
     <span>
-      {{ doc.document().fileName ?? 'Sans titre' }}{{ doc.document().dirty ? ' *' : '' }}
+      {{ doc.document().fileName ?? i18n.t('titleBar.untitled') }}{{ doc.document().dirty ? ' *' : '' }}
     </span>
   </div>
   <div class="title-spacer" data-tauri-drag-region></div>

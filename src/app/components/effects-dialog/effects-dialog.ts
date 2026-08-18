@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges, injec
 import { FormsModule } from '@angular/forms';
 import { DecimalPipe } from '@angular/common';
 import { EffectsService } from '../../services/effects.service';
+import { I18nService } from '../../services/i18n.service';
 import { LayerService } from '../../services/layer.service';
 
 export type EffectType =
@@ -46,6 +47,7 @@ export class EffectsDialogComponent implements OnChanges {
 
   private readonly fx = inject(EffectsService);
   private readonly layers = inject(LayerService);
+  protected readonly i18n = inject(I18nService);
 
   params = { ...DEFAULTS };
 

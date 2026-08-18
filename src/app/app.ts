@@ -17,8 +17,9 @@ import { AdjustmentsService } from './services/adjustments.service';
 import { ColorsService } from './services/colors.service';
 import { DocumentService } from './services/document.service';
 import { EffectsService } from './services/effects.service';
+import { I18nService } from './services/i18n.service';
 import { LayerService } from './services/layer.service';
-import { ToolService, TOOL_LABELS } from './services/tool.service';
+import { ToolService } from './services/tool.service';
 import { CommandEvent } from './types';
 
 @Component({
@@ -48,6 +49,7 @@ export class App {
   protected readonly layers = inject(LayerService);
   protected readonly adjustments = inject(AdjustmentsService);
   private readonly effects = inject(EffectsService);
+  protected readonly i18n = inject(I18nService);
 
   @ViewChild(CanvasComponent, { static: true }) canvas!: CanvasComponent;
   @ViewChild(LayersPanelComponent) layersPanel!: LayersPanelComponent;
@@ -61,6 +63,7 @@ export class App {
   protected fxType = signal<EffectType>('boxBlur');
   protected showResizeImageDialog = signal(false);
   protected showResizeCanvasDialog = signal(false);
+  protected showAboutDialog = signal(false);
 
   @HostListener('window:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
@@ -147,19 +150,28 @@ export class App {
         this.tools.setTool('drawShape');
       } else if (key === 't') {
         this.tools.setTool('text');
+      } else if (mod && (key === '+' || key === '=')) {
+        event.preventDefault();
+        this.canvas.zoomIn();
+      } else if (mod && key === '-') {
+        event.preventDefault();
+        this.canvas.zoomOut();
+      } else if (mod && key === '0') {
+        event.preventDefault();
+        this.canvas.zoomToFit();
+      } else if (mod && key === 'e') {
+        event.preventDefault();
+        this.canvas.pushUndoSnapshot();
+        this.layers.mergeDown(this.layers.activeLayerId());
+        this.canvas.compositeToDisplay();
+        this.canvas.dirty.emit();
+      } else if (mod && event.shiftKey && key === 'f') {
+        event.preventDefault();
+        this.canvas.pushUndoSnapshot();
+        this.layers.flatten();
+        this.canvas.compositeToDisplay();
+        this.canvas.dirty.emit();
       }
-    } else if (mod && !event.shiftKey && key === 'e') {
-      event.preventDefault();
-      this.canvas.pushUndoSnapshot();
-      this.layers.mergeDown(this.layers.activeLayerId());
-      this.canvas.compositeToDisplay();
-      this.canvas.dirty.emit();
-    } else if (mod && event.shiftKey && key === 'f') {
-      event.preventDefault();
-      this.canvas.pushUndoSnapshot();
-      this.layers.flatten();
-      this.canvas.compositeToDisplay();
-      this.canvas.dirty.emit();
     }
   }
 
@@ -172,7 +184,7 @@ export class App {
   }
 
   protected toolLabel(): string {
-    return TOOL_LABELS[this.tools.activeTool()];
+    return this.tools.toolLabel(this.tools.activeTool());
   }
 
   protected onCommand(event: CommandEvent): void {
@@ -197,6 +209,18 @@ export class App {
         break;
       case 'zoom100':
         this.canvas.zoomTo(1);
+        break;
+      case 'zoomFit':
+        this.canvas.zoomToFit();
+        break;
+      case 'viewRules':
+        this.canvas.toggleRules();
+        break;
+      case 'viewGrid':
+        this.canvas.toggleGrid();
+        break;
+      case 'viewNavigator':
+        this.canvas.toggleNavigator();
         break;
       case 'quit':
         void getCurrentWindow().close();
@@ -359,6 +383,15 @@ export class App {
         break;
       case 'imgCrop':
         this.canvas.cropToSelection();
+        break;
+      case 'about':
+        this.showAboutDialog.set(true);
+        break;
+      case 'langFr':
+        this.i18n.setLang('fr');
+        break;
+      case 'langEn':
+        this.i18n.setLang('en');
         break;
     }
   }

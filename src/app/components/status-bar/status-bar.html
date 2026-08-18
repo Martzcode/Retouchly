@@ -3,9 +3,9 @@
     <span class="status-error">{{ error() }}</span>
   } @else {
     <span class="status-item">
-      Position : {{ position().x }}, {{ position().y }}
+      {{ i18n.t('statusBar.position') }}{{ position().x }}, {{ position().y }}
     </span>
-    <span class="status-item">Zoom : {{ zoomLabel() }}%</span>
+    <span class="status-item">{{ i18n.t('statusBar.zoom') }}{{ zoomLabel() }}%</span>
     @if (tool()) {
       <span class="status-item">{{ tool() }}</span>
     }
@@ -15,7 +15,7 @@
         {{ document().fileName }}{{ document().dirty ? ' *' : '' }}
         — {{ document().width }} × {{ document().height }}
       } @else {
-        Aucun document
+        {{ i18n.t('statusBar.noDoc') }}
       }
     </span>
   }

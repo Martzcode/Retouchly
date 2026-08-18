@@ -2,6 +2,7 @@
   #stage
   class="canvas-stage"
   [class.no-doc]="!hasDocument"
+  [class.has-rules]="showRules() && hasDocument"
   (pointerdown)="onPointerDown($event)"
   (pointermove)="onPointerMove($event)"
   (pointerup)="onPointerUp($event)"
@@ -9,39 +10,53 @@
   (dblclick)="onDoubleClick($event)"
   (contextmenu)="onContextMenu($event)"
 >
-  <div #wrap class="canvas-wrap">
-    <canvas
-      #canvas
-      class="main-canvas"
-      [class.move-cursor]="tool() === 'moveSelection' || tool() === 'moveObject'"
-    ></canvas>
-    <canvas #seloverlay class="selection-overlay"></canvas>
-    @if (toolPreview(); as tp) {
-      <div
-        class="tool-preview"
-        [class.square]="tp.square"
-        [style.left.px]="tp.x"
-        [style.top.px]="tp.y"
-        [style.width.px]="tp.size"
-        [style.height.px]="tp.size"
-      ></div>
-    }
-    @for (te of textEditArray(); track te.id) {
-      <textarea
-        class="text-input-overlay"
-        [style.left.px]="te.x"
-        [style.top.px]="te.y"
-        [style.font-family]="te.font"
-        [style.font-size.px]="te.size"
-        [style.font-weight]="te.bold ? 'bold' : 'normal'"
-        [style.font-style]="te.italic ? 'italic' : 'normal'"
-        [style.text-decoration]="te.underline ? 'underline' : 'none'"
-        [style.text-align]="te.align"
-        [style.color]="'#000000'"
-        style="-webkit-text-stroke: 0;"
-        (keydown)="onTextKeydown($event)"
-      ></textarea>
-    }
+  <div class="rule-corner" [class.hidden]="!showRules() || !hasDocument"></div>
+  <div class="rule rule-h" [class.hidden]="!showRules() || !hasDocument">
+    <canvas #ruleH class="rule-canvas"></canvas>
+  </div>
+  <div class="rule rule-v" [class.hidden]="!showRules() || !hasDocument">
+    <canvas #ruleV class="rule-canvas"></canvas>
+  </div>
+  <div #scrollArea class="canvas-scroll-area">
+    <div #wrap class="canvas-wrap">
+      <canvas
+        #canvas
+        class="main-canvas"
+        [class.move-cursor]="tool() === 'moveSelection' || tool() === 'moveObject'"
+      ></canvas>
+      <canvas #seloverlay class="selection-overlay"></canvas>
+      @if (toolPreview(); as tp) {
+        <div
+          class="tool-preview"
+          [class.square]="tp.square"
+          [style.left.px]="tp.x"
+          [style.top.px]="tp.y"
+          [style.width.px]="tp.size"
+          [style.height.px]="tp.size"
+        ></div>
+      }
+      @for (te of textEditArray(); track te.id) {
+        <textarea
+          class="text-input-overlay"
+          [style.left.px]="te.x"
+          [style.top.px]="te.y"
+          [style.font-family]="te.font"
+          [style.font-size.px]="te.size"
+          [style.font-weight]="te.bold ? 'bold' : 'normal'"
+          [style.font-style]="te.italic ? 'italic' : 'normal'"
+          [style.text-decoration]="te.underline ? 'underline' : 'none'"
+          [style.text-align]="te.align"
+          [style.color]="'#000000'"
+          style="-webkit-text-stroke: 0;"
+          (keydown)="onTextKeydown($event)"
+        ></textarea>
+      }
+    </div>
+    <canvas #gridOverlay class="grid-overlay"></canvas>
+  </div>
+  <div class="navigator" [class.hidden]="!showNavigator() || !hasDocument">
+    <canvas class="navigator-canvas" #navCanvas></canvas>
+    <span class="navigator-label">{{ (zoom() * 100) | number:'1.0-0' }}%</span>
   </div>
   @if (!hasDocument) {
     <div class="empty-state">
@@ -49,10 +64,10 @@
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/>
         <path d="M14 2v6h6"/>
       </svg>
-      <p>Aucun document ouvert.</p>
+      <p>{{ i18n.t('canvas.noDoc') }}</p>
       <div class="empty-actions">
-        <button (click)="newRequested.emit()">Nouveau document</button>
-        <button (click)="openRequested.emit()">Ouvrir une image…</button>
+        <button (click)="newRequested.emit()">{{ i18n.t('canvas.newDoc') }}</button>
+        <button (click)="openRequested.emit()">{{ i18n.t('canvas.openImage') }}</button>
       </div>
     </div>
   }

@@ -5,11 +5,18 @@
   min-width: 0;
 }
 
+.hidden {
+  display: none !important;
+}
+
 .canvas-stage {
   position: relative;
+  display: grid;
+  grid-template-columns: 0fr 1fr;
+  grid-template-rows: 0fr 1fr;
   width: 100%;
   height: 100%;
-  overflow: auto;
+  overflow: hidden;
   background: var(--workspace);
   background-image:
     linear-gradient(45deg, var(--workspace-check) 25%, transparent 25%),
@@ -20,9 +27,55 @@
   background-position: 0 0, 0 10px, 10px -10px, -10px 0;
 }
 
+.canvas-stage.has-rules {
+  grid-template-columns: 24px 1fr;
+  grid-template-rows: 24px 1fr;
+}
+
+.rule-corner {
+  grid-column: 1;
+  grid-row: 1;
+  width: 24px;
+  height: 24px;
+  background: #1e1e1e;
+  border-right: 1px solid #3a3a3a;
+  border-bottom: 1px solid #3a3a3a;
+  z-index: 30;
+}
+
+.rule {
+  overflow: hidden;
+}
+
+.rule-h {
+  grid-column: 2;
+  grid-row: 1;
+  border-bottom: 1px solid #3a3a3a;
+}
+
+.rule-v {
+  grid-column: 1;
+  grid-row: 2;
+  border-right: 1px solid #3a3a3a;
+}
+
+.rule-canvas {
+  display: block;
+}
+
+.canvas-scroll-area {
+  grid-column: 2;
+  grid-row: 2;
+  overflow: auto;
+  min-width: 0;
+  min-height: 0;
+  position: relative;
+}
+
 .canvas-wrap {
   position: relative;
   margin: auto;
+  transform-origin: 0 0;
 }
 
 .canvas-stage .main-canvas {
@@ -129,4 +182,39 @@
   z-index: 10;
   line-height: 1.2;
   white-space: pre;
+}
+
+.grid-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  z-index: 5;
+}
+
+.navigator {
+  position: fixed;
+  bottom: 32px;
+  right: 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px;
+  z-index: 20;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.navigator-canvas {
+  display: block;
+  border-radius: 3px;
+}
+
+.navigator-label {
+  font-size: 10px;
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
 }
