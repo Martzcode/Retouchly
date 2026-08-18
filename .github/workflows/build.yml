@@ -493,3 +493,67 @@ jobs:
           retention-days: 90
           path: |
             src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+
+  # ─────────────────────────────────────────────────────────────────────────────
+  # JOB 5 — Publish GitHub Release (Files + .zip + .tar.gz)
+  # ─────────────────────────────────────────────────────────────────────────────
+  release:
+    name: Publish GitHub Release
+    needs: [version, build-windows, build-linux, build-macos]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts_download
+
+      - name: Prepare release files and archives (.zip + .tar.gz)
+        run: |
+          VERSION="${{ needs.version.outputs.version }}"
+          mkdir -p release_assets
+
+          # Copy all individual installer binaries into release_assets
+          find artifacts_download -type f \( -name "*.msix" -o -name "*.msi" -o -name "*.exe" -o -name "*.deb" -o -name "*.rpm" -o -name "*.dmg" \) -exec cp {} release_assets/ \;
+
+          echo "Found installer files:"
+          ls -la release_assets/
+
+          # Create .zip and .tar.gz archives containing all installer files
+          cd release_assets
+          zip -r "../retouchly-${VERSION}-all-installers.zip" ./*
+          tar -czvf "../retouchly-${VERSION}-all-installers.tar.gz" ./*
+          cd ..
+
+          # Move archives into release_assets so all files and archives are published
+          cp "retouchly-${VERSION}-all-installers.zip" release_assets/
+          cp "retouchly-${VERSION}-all-installers.tar.gz" release_assets/
+
+          echo "Final release assets:"
+          ls -la release_assets/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.version.outputs.version }}
+          name: Retouchly ${{ needs.version.outputs.version }}
+          body: |
+            Automated release for Retouchly version `${{ needs.version.outputs.version }}`.
+
+            ### 📦 Direct Installers & Packages:
+            - **Windows**: `.msix` (Microsoft Store), `.msi` (Windows Installer), `.exe` (NSIS Installer)
+            - **Linux**: `.deb` (Debian / Ubuntu), `.rpm` (Fedora / RHEL / openSUSE)
+            - **macOS**: `.dmg` (Universal binary for Apple Silicon & Intel)
+
+            ### 🗂️ Archives:
+            - `retouchly-${{ needs.version.outputs.version }}-all-installers.zip`
+            - `retouchly-${{ needs.version.outputs.version }}-all-installers.tar.gz`
+          files: release_assets/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
