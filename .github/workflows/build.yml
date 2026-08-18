@@ -78,7 +78,7 @@ jobs:
           git push origin "${{ steps.calc.outputs.version }}"
 
   # ─────────────────────────────────────────────────────────────────────────────
-  # JOB 2 — Windows  →  MSIX (Store-compliant), MSI, EXE (NSIS)
+  # JOB 2 — Windows  →  MSI, EXE (NSIS), MSIX (Store-compliant via MakeAppx)
   # ─────────────────────────────────────────────────────────────────────────────
   build-windows:
     name: Build — Windows
@@ -148,37 +148,94 @@ jobs:
           data["about"]["version"] = "Version ${{ needs.version.outputs.version }}"
           p.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
-      # Build MSIX (Microsoft Store) + MSI + NSIS EXE in a single Tauri pass.
-      # We override the bundle targets so all three formats are produced.
-      - name: Build Tauri (MSIX + MSI + NSIS)
-        run: npx tauri build --bundles msi,nsis,msix
+      # Tauri 2 supports msi and nsis only — MSIX is built separately below
+      - name: Build Tauri (MSI + NSIS)
+        run: npx tauri build --bundles msi,nsis
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
 
-      # ── MSIX signing for MS Store compliance ────────────────────────────────
-      # The certificate must be a Base64-encoded PFX stored in the secret
-      # WINDOWS_PFX_BASE64.  The password goes in WINDOWS_PFX_PASSWORD.
-      - name: Sign MSIX for Microsoft Store
+      # ── Package MSIX for Microsoft Store from the MSI ──────────────────────
+      # MakeAppx.exe is pre-installed on GitHub Windows runners (Windows SDK).
+      # We wrap the MSI in a minimal MSIX layout and sign it with the PFX cert.
+      # The WINDOWS_MSIX_PUBLISHER secret must match your PFX certificate CN
+      # exactly (e.g. "CN=Martzcode, O=Martzcode, C=FR").
+      - name: Create & sign MSIX for Microsoft Store
         if: github.event_name == 'push'
         shell: pwsh
         run: |
-          $pfxBytes = [Convert]::FromBase64String("$env:PFX_BASE64")
-          $pfxPath  = "$env:RUNNER_TEMP\retouchly.pfx"
-          [IO.File]::WriteAllBytes($pfxPath, $pfxBytes)
+          $version = "${{ needs.version.outputs.semver }}"
+          $msi     = (Get-ChildItem -Path "src-tauri/target/release/bundle/msi" -Filter "*.msi" | Select-Object -First 1).FullName
+          $msixDir = "$env:RUNNER_TEMP\msix_layout"
+          $msixOut = "src-tauri/target/release/bundle/msix"
+          New-Item -ItemType Directory -Force -Path $msixDir, $msixOut | Out-Null
 
-          $msix = Get-ChildItem -Path "src-tauri/target/release/bundle/msix" -Filter "*.msix" | Select-Object -First 1
-          if (-not $msix) { Write-Error "No .msix found"; exit 1 }
+          # Copy MSI as the payload
+          Copy-Item $msi "$msixDir\Retouchly.msi"
 
-          # SignTool is included with the Windows SDK on GitHub runners
-          & "C:\Program Files (x86)\Windows Kits\10\App Certification Kit\signtool.exe" sign `
-              /fd SHA256 /td SHA256 /as /tr http://timestamp.digicert.com `
-              /f $pfxPath /p "$env:PFX_PASSWORD" $msix.FullName
+          # AppxManifest — Publisher must match your signing certificate CN exactly
+          $manifest = @"
+          <?xml version="1.0" encoding="utf-8"?>
+          <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+                   xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+                   xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+                   IgnorableNamespaces="uap rescap">
+            <Identity Name="com.retouchly.app"
+                      Publisher="$env:MSIX_PUBLISHER"
+                      Version="${version}.0"
+                      ProcessorArchitecture="x64" />
+            <Properties>
+              <DisplayName>Retouchly</DisplayName>
+              <PublisherDisplayName>Martzcode</PublisherDisplayName>
+              <Description>Open source image editor</Description>
+              <Logo>logo.png</Logo>
+            </Properties>
+            <Dependencies>
+              <TargetDeviceFamily Name="Windows.Desktop"
+                                  MinVersion="10.0.17763.0"
+                                  MaxVersionTested="10.0.22621.0" />
+            </Dependencies>
+            <Resources><Resource Language="en-US" /></Resources>
+            <Applications>
+              <Application Id="Retouchly"
+                           Executable="Retouchly.msi"
+                           EntryPoint="Windows.FullTrustApplication">
+                <uap:VisualElements DisplayName="Retouchly"
+                                    Description="Open source image editor"
+                                    BackgroundColor="transparent"
+                                    Square150x150Logo="logo.png"
+                                    Square44x44Logo="logo.png" />
+              </Application>
+            </Applications>
+            <Capabilities>
+              <rescap:Capability Name="runFullTrust" />
+            </Capabilities>
+          </Package>
+          "@
+          $manifest | Out-File -Encoding UTF8 "$msixDir\AppxManifest.xml"
 
-          Remove-Item $pfxPath -Force
+          # Use the 128x128 icon as MSIX logo
+          $icon = Get-ChildItem -Path "src-tauri/icons" -Filter "128x128.png" | Select-Object -First 1
+          if ($icon) { Copy-Item $icon.FullName "$msixDir\logo.png" }
+
+          # Build the MSIX package
+          $makeAppx = "C:\Program Files (x86)\Windows Kits\10\App Certification Kit\makeappx.exe"
+          & $makeAppx pack /d $msixDir /p "$msixOut\Retouchly_${version}_x64.msix" /o
+
+          # Sign the MSIX (only if certificate is provided)
+          if ($env:PFX_BASE64 -ne "") {
+            $pfxBytes = [Convert]::FromBase64String("$env:PFX_BASE64")
+            $pfxPath  = "$env:RUNNER_TEMP\retouchly.pfx"
+            [IO.File]::WriteAllBytes($pfxPath, $pfxBytes)
+            $signTool = "C:\Program Files (x86)\Windows Kits\10\App Certification Kit\signtool.exe"
+            & $signTool sign /fd SHA256 /td SHA256 /as /tr http://timestamp.digicert.com `
+              /f $pfxPath /p "$env:PFX_PASSWORD" "$msixOut\Retouchly_${version}_x64.msix"
+            Remove-Item $pfxPath -Force
+          }
         env:
-          PFX_BASE64:  ${{ secrets.WINDOWS_PFX_BASE64 }}
-          PFX_PASSWORD: ${{ secrets.WINDOWS_PFX_PASSWORD }}
+          MSIX_PUBLISHER: ${{ secrets.WINDOWS_MSIX_PUBLISHER }}
+          PFX_BASE64:     ${{ secrets.WINDOWS_PFX_BASE64 }}
+          PFX_PASSWORD:   ${{ secrets.WINDOWS_PFX_PASSWORD }}
 
       - name: Upload Windows artifacts
         uses: actions/upload-artifact@v4
