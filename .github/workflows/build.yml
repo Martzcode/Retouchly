@@ -85,8 +85,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          node-version: 24
 
       - name: Setup Rust (stable)
         uses: dtolnay/rust-toolchain@stable
@@ -102,7 +101,7 @@ jobs:
           restore-keys: windows-cargo-
 
       - name: Install npm dependencies
-        run: npm ci
+        run: npm install
 
       # Patch version in every file that embeds it
       - name: Patch version — tauri.conf.json
@@ -199,8 +198,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          node-version: 24
 
       - name: Setup Rust (stable)
         uses: dtolnay/rust-toolchain@stable
@@ -227,10 +225,10 @@ jobs:
             patchelf \
             libssl-dev \
             pkg-config \
-            rpm             # rpmbuild tool
+            rpm
 
       - name: Install npm dependencies
-        run: npm ci
+        run: npm install
 
       - name: Patch version — tauri.conf.json
         run: |
@@ -303,8 +301,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 22
-          cache: npm
+          node-version: 24
 
       - name: Setup Rust (stable) with universal targets
         uses: dtolnay/rust-toolchain@stable
@@ -322,7 +319,7 @@ jobs:
           restore-keys: macos-cargo-
 
       - name: Install npm dependencies
-        run: npm ci
+        run: npm install
 
       - name: Patch version — tauri.conf.json
         run: |
