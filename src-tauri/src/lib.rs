@@ -11,9 +11,9 @@ pub fn run() {
             commands::image::save_image,
             commands::fonts::list_system_fonts,
         ])
-        .setup(|app| {
+        .setup(|_app| {
             #[cfg(target_os = "linux")]
-            zoom::disable_pinch_zoom(app);
+            zoom::disable_pinch_zoom(_app);
             Ok(())
         })
         .run(tauri::generate_context!())

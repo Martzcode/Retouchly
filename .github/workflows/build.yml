@@ -43,8 +43,8 @@ jobs:
           now    = datetime.date.today()
           # Padded prefix used for tag lookup and display (e.g. "2026.08")
           prefix_padded = now.strftime("%Y.%m")
-          # Unpadded prefix for semver (e.g. "2026.8") — semver forbids leading zeros
-          prefix_semver = f"{now.year}.{now.month}"
+          # Unpadded 2-digit year prefix for semver (e.g. "26.8") — WiX/MSI requires major version <= 255
+          prefix_semver = f"{now.year % 100}.{now.month}"
 
           # Collect all tags matching our scheme for the current month
           raw = subprocess.run(
@@ -450,12 +450,17 @@ jobs:
 
       # Build a universal (fat) binary DMG
       - name: Build Tauri (DMG — universal binary)
-        run: npx tauri build --target universal-apple-darwin --bundles dmg
+        shell: bash
+        run: |
+          if [ -z "$APPLE_SIGNING_IDENTITY" ]; then
+            echo "No APPLE_SIGNING_IDENTITY secret set — falling back to ad-hoc signing ('-')"
+            export APPLE_SIGNING_IDENTITY="-"
+          fi
+          npx tauri build --target universal-apple-darwin --bundles dmg
         env:
           TAURI_SIGNING_PRIVATE_KEY:          ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
-          # Code-signing identity (e.g. "Developer ID Application: Your Name (TEAMID)")
-          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_SIGNING_IDENTITY:             ${{ secrets.APPLE_SIGNING_IDENTITY }}
 
       # ── Notarization (requires an App Store Connect API key) ───────────────
       - name: Notarize DMG
