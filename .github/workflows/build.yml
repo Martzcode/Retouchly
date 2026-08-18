@@ -161,13 +161,13 @@ jobs:
       # The WINDOWS_MSIX_PUBLISHER secret must match your PFX certificate CN
       # exactly (e.g. "CN=Martzcode, O=Martzcode, C=FR").
       - name: Create & sign MSIX for Microsoft Store
-        if: github.event_name == 'push'
         shell: pwsh
         run: |
-          $version = "${{ needs.version.outputs.semver }}"
-          $msi     = (Get-ChildItem -Path "src-tauri/target/release/bundle/msi" -Filter "*.msi" | Select-Object -First 1).FullName
-          $msixDir = "$env:RUNNER_TEMP\msix_layout"
-          $msixOut = "src-tauri/target/release/bundle/msix"
+          $version   = "${{ needs.version.outputs.semver }}"
+          $publisher = if ($env:MSIX_PUBLISHER) { $env:MSIX_PUBLISHER } else { "CN=Retouchly" }
+          $msi       = (Get-ChildItem -Path "src-tauri/target/release/bundle/msi" -Filter "*.msi" | Select-Object -First 1).FullName
+          $msixDir   = "$env:RUNNER_TEMP\msix_layout"
+          $msixOut   = "src-tauri/target/release/bundle/msix"
           New-Item -ItemType Directory -Force -Path $msixDir, $msixOut | Out-Null
 
           # Copy MSI as the payload
@@ -181,7 +181,7 @@ jobs:
                    xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
                    IgnorableNamespaces="uap rescap">
             <Identity Name="com.retouchly.app"
-                      Publisher="$env:MSIX_PUBLISHER"
+                      Publisher="$publisher"
                       Version="${version}.0"
                       ProcessorArchitecture="x64" />
             <Properties>
