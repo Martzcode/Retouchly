@@ -13,6 +13,7 @@ import { TitleBarComponent } from './components/title-bar/title-bar';
 import { ToolBarComponent } from './components/tool-bar/tool-bar';
 import { ToolOptionsComponent } from './components/tool-options/tool-options';
 import { ToolsPaletteComponent } from './components/tools-palette/tools-palette';
+import { UnsavedDialogComponent, UnsavedAction } from './components/unsaved-dialog/unsaved-dialog';
 import { AdjustmentsService } from './services/adjustments.service';
 import { ColorsService } from './services/colors.service';
 import { DocumentService } from './services/document.service';
@@ -38,6 +39,7 @@ import { CommandEvent } from './types';
     ResizeCanvasDialogComponent,
     ColorsPanelComponent,
     StatusBarComponent,
+    UnsavedDialogComponent,
   ],
   templateUrl: './app.html',
   styleUrl: './app.css',
@@ -64,6 +66,25 @@ export class App {
   protected showResizeImageDialog = signal(false);
   protected showResizeCanvasDialog = signal(false);
   protected showAboutDialog = signal(false);
+  protected showUnsavedDialog = signal(false);
+  protected unsavedFileName = signal<string | null>(null);
+
+  private readonly win = getCurrentWindow();
+  private pendingAction: ((action: UnsavedAction) => void) | null = null;
+
+  constructor() {
+    void this.win.onCloseRequested((event) => {
+      if (!this.doc.document().dirty || this.showUnsavedDialog()) {
+        return;
+      }
+      event.preventDefault();
+      this.openUnsavedDialog((action) => {
+        void this.handleUnsavedAction(action, () => {
+          void this.win.destroy();
+        });
+      });
+    });
+  }
 
   @HostListener('window:keydown', ['$event'])
   onKeydown(event: KeyboardEvent): void {
@@ -75,12 +96,16 @@ export class App {
         this.canvas.pushUndoSnapshot();
         this.layers.addLayer();
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
       } else {
         this.onNew();
       }
     } else if (mod && key === 'o') {
       event.preventDefault();
       this.onOpen();
+    } else if (mod && key === 'w') {
+      event.preventDefault();
+      this.closeCurrentDocument();
     } else if (mod && key === 's') {
       event.preventDefault();
       if (event.shiftKey) {
@@ -195,11 +220,22 @@ export class App {
       case 'open':
         this.onOpen();
         break;
+      case 'closeDoc':
+        this.closeCurrentDocument();
+        break;
       case 'save':
         this.onSave();
         break;
       case 'saveAs':
         this.onSaveAs();
+        break;
+      case 'exportImage':
+        break;
+      case 'exportPng':
+        this.onExport('png');
+        break;
+      case 'exportJpg':
+        this.onExport('jpg');
         break;
       case 'zoomIn':
         this.canvas.zoomIn();
@@ -253,42 +289,51 @@ export class App {
         this.canvas.pushUndoSnapshot();
         this.layers.addLayer();
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'duplicateLayer':
         this.canvas.pushUndoSnapshot();
         this.layers.duplicateLayer(this.layers.activeLayerId());
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'deleteLayer':
         this.canvas.pushUndoSnapshot();
         this.layers.removeLayer(this.layers.activeLayerId());
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'mergeDown':
         this.canvas.pushUndoSnapshot();
         this.layers.mergeDown(this.layers.activeLayerId());
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'flattenImage':
         this.canvas.pushUndoSnapshot();
         this.layers.flatten();
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'moveLayerUp':
         this.canvas.pushUndoSnapshot();
         this.layers.moveLayerUp(this.layers.activeLayerId());
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'moveLayerDown':
         this.canvas.pushUndoSnapshot();
         this.layers.moveLayerDown(this.layers.activeLayerId());
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'reorderLayer':
         this.canvas.pushUndoSnapshot();
+        this.doc.markDirty();
         break;
       case 'transformLayer':
         this.canvas.pushUndoSnapshot();
+        this.doc.markDirty();
         break;
       case 'importAsLayer':
         this.onImportAsLayer();
@@ -303,16 +348,19 @@ export class App {
         this.canvas.pushUndoSnapshot();
         this.adjustments.invert();
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'adjDesaturate':
         this.canvas.pushUndoSnapshot();
         this.adjustments.desaturate();
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'adjSepia':
         this.canvas.pushUndoSnapshot();
         this.adjustments.sepia();
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'adjPosterize':
         this.openAdjustment('posterize');
@@ -333,16 +381,19 @@ export class App {
         this.canvas.pushUndoSnapshot();
         this.effects.sharpen();
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'fxEmboss':
         this.canvas.pushUndoSnapshot();
         this.effects.emboss();
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'fxEdge':
         this.canvas.pushUndoSnapshot();
         this.effects.edgeDetect();
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'fxNoise':
         this.openEffect('noise');
@@ -360,29 +411,35 @@ export class App {
         this.canvas.pushUndoSnapshot();
         this.layers.rotateAll(90);
         this.canvas.onDocumentResized();
+        this.doc.markDirty();
         break;
       case 'imgRotateCCW':
         this.canvas.pushUndoSnapshot();
         this.layers.rotateAll(270);
         this.canvas.onDocumentResized();
+        this.doc.markDirty();
         break;
       case 'imgRotate180':
         this.canvas.pushUndoSnapshot();
         this.layers.rotateAll(180);
         this.canvas.onDocumentResized();
+        this.doc.markDirty();
         break;
       case 'imgFlipH':
         this.canvas.pushUndoSnapshot();
         this.layers.flipAll('horizontal');
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'imgFlipV':
         this.canvas.pushUndoSnapshot();
         this.layers.flipAll('vertical');
         this.canvas.compositeToDisplay();
+        this.doc.markDirty();
         break;
       case 'imgCrop':
         this.canvas.cropToSelection();
+        this.doc.markDirty();
         break;
       case 'about':
         this.showAboutDialog.set(true);
@@ -396,7 +453,10 @@ export class App {
     }
   }
 
-  protected onNew(): void {
+  protected async onNew(): Promise<void> {
+    if (!(await this.confirmDiscard())) {
+      return;
+    }
     this.showNewDialog.set(true);
   }
 
@@ -438,6 +498,7 @@ export class App {
     this.canvas.pushUndoSnapshot();
     this.layers.resizeImage(event.width, event.height);
     this.canvas.onDocumentResized();
+    this.doc.markDirty();
   }
 
   protected onResizeImageCancel(): void {
@@ -449,6 +510,7 @@ export class App {
     this.canvas.pushUndoSnapshot();
     this.layers.resizeCanvas(event.width, event.height, event.anchorX, event.anchorY);
     this.canvas.onDocumentResized();
+    this.doc.markDirty();
   }
 
   protected onResizeCanvasCancel(): void {
@@ -456,15 +518,41 @@ export class App {
   }
 
   protected async onOpen(): Promise<void> {
+    if (!(await this.confirmDiscard())) {
+      return;
+    }
     this.doc.setError(null);
     try {
-      const res = await this.doc.openImage();
+      const res = await this.doc.openDocument();
       if (res) {
-        this.canvas.loadImage(res.dataUrl, res.width, res.height);
+        if (res.kind === 'project' && res.content) {
+          if (await this.canvas.loadProject(res.content)) {
+            this.doc.setSize(this.layers.width, this.layers.height);
+          }
+        } else if (res.dataUrl) {
+          this.canvas.loadImage(res.dataUrl, res.width, res.height);
+        }
       }
     } catch (err) {
       this.doc.setError(String(err));
     }
+  }
+
+  protected async closeCurrentDocument(): Promise<void> {
+    if (!this.canvas.hasDocument) {
+      return;
+    }
+    const finishClose = () => {
+      this.canvas.closeDocument();
+      this.doc.reset();
+    };
+    if (!this.doc.document().dirty) {
+      finishClose();
+      return;
+    }
+    this.openUnsavedDialog((action) => {
+      void this.handleUnsavedAction(action, finishClose);
+    });
   }
 
   protected async onSave(): Promise<void> {
@@ -473,7 +561,7 @@ export class App {
     }
     this.doc.setError(null);
     try {
-      await this.doc.save(this.canvas.exportPngDataUrl(), false);
+      await this.doc.saveProject(this.layers.exportProject(), false);
     } catch (err) {
       this.doc.setError(String(err));
     }
@@ -485,10 +573,76 @@ export class App {
     }
     this.doc.setError(null);
     try {
-      await this.doc.save(this.canvas.exportPngDataUrl(), true);
+      await this.doc.saveProject(this.layers.exportProject(), true);
     } catch (err) {
       this.doc.setError(String(err));
     }
+  }
+
+  protected async onExport(format: 'png' | 'jpg'): Promise<void> {
+    if (!this.canvas.hasDocument) {
+      return;
+    }
+    this.doc.setError(null);
+    try {
+      await this.doc.save(this.canvas.exportPngDataUrl(), true, false, format);
+    } catch (err) {
+      this.doc.setError(String(err));
+    }
+  }
+
+  protected onUnsavedAction(action: UnsavedAction): void {
+    const resolver = this.pendingAction;
+    this.pendingAction = null;
+    this.showUnsavedDialog.set(false);
+    resolver?.(action);
+  }
+
+  private openUnsavedDialog(onResult: (action: UnsavedAction) => void): void {
+    this.unsavedFileName.set(this.doc.document().fileName);
+    this.pendingAction = onResult;
+    this.showUnsavedDialog.set(true);
+  }
+
+  private async handleUnsavedAction(
+    action: UnsavedAction,
+    proceed: () => void,
+  ): Promise<void> {
+    if (action === 'cancel') {
+      return;
+    }
+    if (action === 'save' && !(await this.saveCurrentProject())) {
+      return;
+    }
+    proceed();
+  }
+
+  private async saveCurrentProject(): Promise<boolean> {
+    if (!this.canvas.hasDocument) {
+      return true;
+    }
+    this.doc.setError(null);
+    try {
+      return await this.doc.saveProject(this.layers.exportProject(), false);
+    } catch (err) {
+      this.doc.setError(String(err));
+      return false;
+    }
+  }
+
+  private async confirmDiscard(): Promise<boolean> {
+    if (!this.doc.document().dirty) {
+      return true;
+    }
+    return await new Promise((resolve) => {
+      this.openUnsavedDialog((action) => {
+        if (action === 'save') {
+          void this.saveCurrentProject().then((ok) => resolve(ok));
+        } else {
+          resolve(action === 'discard');
+        }
+      });
+    });
   }
 
   protected onCanvasPosition(pos: { x: number; y: number }): void {

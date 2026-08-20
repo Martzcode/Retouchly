@@ -51,7 +51,7 @@
 - Symétrie horizontale / verticale
 - Redimensionner l'image (avec ratio)
 - Redimensionner le canevas (avec ancrage 9 points)
-- Recadrer sur la sélection
+- Rogner selon la sélection
 
 ### Navigation et affichage
 - Zoom (molette Ctrl, Ctrl+=, Ctrl+-, Ctrl+0 ajuster)
@@ -59,6 +59,12 @@
 - Règles avec graduations adaptatives
 - Grille superposable
 - Navigator (mini-vue)
+
+### Projets
+- Format de projet Retouchly (.rtly) — enregistre et réouvre tous les calques (pixels, métadonnées, transformations)
+- Enregistrer (Ctrl+S) / Enregistrer sous (Ctrl+Maj+S)
+- Export image PNG/JPG via Fichier > Exporter comme image…
+- Garde de fermeture : prompt Enregistrer / Ne pas enregistrer / Annuler si le document est modifié (fenêtre, Nouveau, Ouvrir)
 
 ### Internationalisation
 - Français et Anglais

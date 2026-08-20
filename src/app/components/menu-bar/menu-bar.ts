@@ -8,6 +8,7 @@ interface MenuItem {
   shortcut?: string;
   disabled?: boolean;
   checked?: boolean;
+  children?: MenuItem[];
 }
 
 interface Menu {
@@ -46,9 +47,18 @@ export class MenuBarComponent {
         items: [
           { id: 'new', label: t('menu.new'), shortcut: t('shortcut.new') },
           { id: 'open', label: t('menu.open'), shortcut: t('shortcut.open') },
+          { id: 'closeDoc', label: t('menu.close'), shortcut: t('shortcut.close') },
           { id: 'sep-1', label: '-' },
           { id: 'save', label: t('menu.save'), shortcut: t('shortcut.save') },
           { id: 'saveAs', label: t('menu.saveAs'), shortcut: t('shortcut.saveAs') },
+          {
+            id: 'exportImage',
+            label: t('menu.exportImage'),
+            children: [
+              { id: 'exportPng', label: t('menu.exportPng') },
+              { id: 'exportJpg', label: t('menu.exportJpg') },
+            ],
+          },
           { id: 'sep-2', label: '-' },
           { id: 'quit', label: t('menu.quit') },
         ],
@@ -175,7 +185,7 @@ export class MenuBarComponent {
   }
 
   protected select(item: MenuItem): void {
-    if (this.isDisabled(item) || item.label === '-') {
+    if (this.isDisabled(item) || item.label === '-' || (item.children && item.children.length > 0)) {
       return;
     }
     this.command.emit({ id: item.id });
@@ -214,6 +224,8 @@ export class MenuBarComponent {
         'imgRotateCW', 'imgRotateCCW', 'imgRotate180',
         'imgFlipH', 'imgFlipV',
         'imgCrop',
+        'exportImage', 'exportPng', 'exportJpg',
+        'closeDoc',
       ];
       if (layerIds.includes(item.id) || adjIds.includes(item.id) || fxIds.includes(item.id) || imgIds.includes(item.id)) {
         return true;

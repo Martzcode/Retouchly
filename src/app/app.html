@@ -46,6 +46,12 @@
       (cancel)="onNewCancel()"
     ></app-new-image-dialog>
   }
+  @if (showUnsavedDialog()) {
+    <app-unsaved-dialog
+      [fileName]="unsavedFileName()"
+      (action)="onUnsavedAction($event)"
+    ></app-unsaved-dialog>
+  }
   <app-adjustment-dialog
     [type]="adjType()"
     [open]="showAdjDialog()"

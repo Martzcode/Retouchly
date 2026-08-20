@@ -7,9 +7,10 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
-            commands::image::open_image,
             commands::image::save_image,
             commands::fonts::list_system_fonts,
+            commands::project::open_document,
+            commands::project::save_project,
         ])
         .setup(|_app| {
             #[cfg(target_os = "linux")]

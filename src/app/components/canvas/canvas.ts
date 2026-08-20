@@ -194,6 +194,29 @@ export class CanvasComponent implements OnDestroy {
     this.compositeToDisplay();
   }
 
+  closeDocument(): void {
+    this.hasDocument = false;
+    this.stopAnts();
+    this.clearHistory();
+    this.showSelection(null);
+    this.cancelPolygon();
+    this.textEdit.set(null);
+    this.toolPreview.set(null);
+    this.selCreate = null;
+    this.movingSelection = null;
+    this.moveObjectState = null;
+    this.shapeDrag = null;
+    this.shapePreview = null;
+    this.polygonPoints = [];
+    this.clipboard = null;
+    this.layers.reset(0, 0);
+    this.setupTransparentCanvas(320, 240);
+    this.zoom.set(1);
+    this.applyZoom();
+    this.zoomChange.emit(1);
+    this.compositeToDisplay();
+  }
+
   onDocumentResized(): void {
     const w = this.layers.width;
     const h = this.layers.height;
@@ -219,6 +242,17 @@ export class CanvasComponent implements OnDestroy {
       this.compositeToDisplay();
     };
     img.src = dataUrl;
+  }
+
+  async loadProject(json: string): Promise<boolean> {
+    const ok = await this.layers.loadProject(json);
+    if (!ok) {
+      return false;
+    }
+    this.hasDocument = true;
+    this.clearHistory();
+    this.onDocumentResized();
+    return true;
   }
 
   exportPngDataUrl(): string {
@@ -304,22 +338,8 @@ export class CanvasComponent implements OnDestroy {
       return;
     }
     this.pushUndoSnapshot();
-    const w = this.nativeWidth;
-    const h = this.nativeHeight;
-    const layers = this.layers.layers();
-    for (const layer of layers) {
-      const img = layer.ctx.getImageData(b.x, b.y, b.w, b.h);
-      layer.canvas.width = b.w;
-      layer.canvas.height = b.h;
-      layer.ctx.putImageData(img, 0, 0);
-    }
-    this.nativeWidth = b.w;
-    this.nativeHeight = b.h;
-    this.layers['_width'] = b.w;
-    this.layers['_height'] = b.h;
-    this.showSelection(null);
-    this.newDocument(b.w, b.h);
-    this.compositeToDisplay();
+    this.layers.cropAll(b.x, b.y, b.w, b.h);
+    this.onDocumentResized();
     this.dirty.emit();
   }
 

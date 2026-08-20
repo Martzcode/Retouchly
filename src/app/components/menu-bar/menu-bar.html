@@ -18,6 +18,32 @@
           @for (item of menu.items; track item.id + item.label) {
             @if (item.label === '-') {
               <div class="separator"></div>
+            } @else if (item.children && item.children.length > 0) {
+              <div class="menu-item menu-sub-toggle">
+                <span class="item-check"></span>
+                <span class="item-label">{{ item.label }}</span>
+                <span class="submenu-arrow">▸</span>
+                <div class="menu-dropdown sub">
+                  @for (child of item.children; track child.id) {
+                    @if (child.label === '-') {
+                      <div class="separator"></div>
+                    } @else {
+                      <button
+                        class="menu-item"
+                        [class.disabled]="isDisabled(child)"
+                        [disabled]="isDisabled(child)"
+                        (click)="select(child)"
+                      >
+                        <span class="item-check"></span>
+                        <span class="item-label">{{ child.label }}</span>
+                        @if (child.shortcut) {
+                          <span class="item-shortcut">{{ child.shortcut }}</span>
+                        }
+                      </button>
+                    }
+                  }
+                </div>
+              </div>
             } @else {
               <button
                 class="menu-item"

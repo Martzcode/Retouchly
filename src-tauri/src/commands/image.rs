@@ -1,64 +1,21 @@
-use std::io::Cursor;
 use std::path::PathBuf;
 use std::sync::mpsc;
 
 use base64::{engine::general_purpose::STANDARD as BASE64, Engine};
 use image::ImageFormat;
-use serde::Serialize;
 use tauri::AppHandle;
 use tauri_plugin_dialog::DialogExt;
 
-#[derive(Debug, Serialize)]
-#[serde(rename_all = "camelCase")]
-pub struct OpenImageResult {
-    pub path: String,
-    pub width: u32,
-    pub height: u32,
-    pub data_url: String,
-}
-
-/// Ouvre un dialogue natif pour choisir une image PNG/JPG,
-/// la décode puis la renvoie au frontend en data URL PNG.
-#[tauri::command]
-pub async fn open_image(app: AppHandle) -> Result<Option<OpenImageResult>, String> {
-    let (tx, rx) = mpsc::channel::<Option<PathBuf>>();
-    app.dialog()
-        .file()
-        .add_filter("Images", &["png", "jpg", "jpeg"])
-        .pick_file(move |file| {
-            let _ = tx.send(file.and_then(|f| f.into_path().ok()));
-        });
-
-    let Some(path) = rx.recv().map_err(|e| e.to_string())? else {
-        return Ok(None);
-    };
-
-    let img = image::open(&path).map_err(|e| format!("Impossible de lire l'image : {e}"))?;
-    let (width, height) = (img.width(), img.height());
-
-    let mut png = Vec::new();
-    img.write_to(&mut Cursor::new(&mut png), ImageFormat::Png)
-        .map_err(|e| e.to_string())?;
-
-    let data_url = format!("data:image/png;base64,{}", BASE64.encode(png));
-
-    Ok(Some(OpenImageResult {
-        path: path.to_string_lossy().into_owned(),
-        width,
-        height,
-        data_url,
-    }))
-}
-
 /// Reçoit une data URL PNG du canvas et l'écrit sur disque.
-/// Si `path` est fourni, enregistre directement ; sinon ouvre un dialogue
-/// et choisit PNG ou JPG selon l'extension saisie.
+/// Si `path` est fourni, enregistre directement ; sinon ouvre un dialogue.
+/// `format` (optionnel) force le format de sortie : "png" ou "jpg".
 #[tauri::command]
 pub async fn save_image(
     app: AppHandle,
     data_url: String,
     default_name: Option<String>,
     path: Option<String>,
+    format: Option<String>,
 ) -> Result<Option<String>, String> {
     let picked: Option<PathBuf> = match path {
         Some(p) => Some(PathBuf::from(p)),
@@ -80,9 +37,16 @@ pub async fn save_image(
         return Ok(None);
     };
 
-    let format = format_from_path(&path);
+    let mut out_format = format_from_path(&path);
+    if let Some(f) = format {
+        out_format = if f.eq_ignore_ascii_case("jpg") || f.eq_ignore_ascii_case("jpeg") {
+            ImageFormat::Jpeg
+        } else {
+            ImageFormat::Png
+        };
+    }
     if path.extension().is_none() {
-        path.set_extension(match format {
+        path.set_extension(match out_format {
             ImageFormat::Jpeg => "jpg",
             _ => "png",
         });
@@ -96,7 +60,7 @@ pub async fn save_image(
         .map_err(|e| format!("Décodage base64 impossible : {e}"))?;
     let img = image::load_from_memory(&bytes).map_err(|e| e.to_string())?;
 
-    match format {
+    match out_format {
         ImageFormat::Jpeg => {
             let rgb = composite_on_white(&img.to_rgba8());
             let mut out = Vec::new();

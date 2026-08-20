@@ -13,8 +13,12 @@
     "help": "Help",
     "new": "New",
     "open": "Open…",
-    "save": "Save",
-    "saveAs": "Save As…",
+    "close": "Close",
+    "save": "Save Project",
+    "saveAs": "Save Project As…",
+    "exportImage": "Export as Image",
+    "exportPng": "PNG",
+    "exportJpg": "JPG",
     "quit": "Quit",
     "undo": "Undo",
     "redo": "Redo",
@@ -38,7 +42,7 @@
     "rotate180": "Rotate 180°",
     "flipH": "Flip Horizontal",
     "flipV": "Flip Vertical",
-    "crop": "Crop to Selection",
+    "crop": "Trim to Selection",
     "newLayer": "New Layer",
     "duplicateLayer": "Duplicate Layer",
     "deleteLayer": "Delete Layer",
@@ -67,6 +71,7 @@
   "shortcut": {
     "new": "Ctrl+N",
     "open": "Ctrl+O",
+    "close": "Ctrl+W",
     "save": "Ctrl+S",
     "saveAs": "Ctrl+Shift+S",
     "undo": "Ctrl+Z",
@@ -254,11 +259,18 @@
   },
   "canvas": {
     "noDoc": "No document open.",
-    "newDoc": "New Document",
-    "openImage": "Open an image…"
+    "newDoc": "New Project",
+    "openImage": "Open…"
   },
   "titleBar": {
     "untitled": "Untitled"
+  },
+  "unsaved": {
+    "title": "Unsaved Changes",
+    "message": "The document has unsaved changes. Save before continuing?",
+    "save": "Save",
+    "discard": "Don't Save",
+    "cancel": "Cancel"
   },
   "statusBar": {
     "position": "Position: ",

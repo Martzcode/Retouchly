@@ -13,8 +13,12 @@
     "help": "Aide",
     "new": "Nouveau",
     "open": "Ouvrir…",
-    "save": "Enregistrer",
-    "saveAs": "Enregistrer sous…",
+    "close": "Fermer",
+    "save": "Enregistrer le projet",
+    "saveAs": "Enregistrer le projet sous…",
+    "exportImage": "Exporter comme image",
+    "exportPng": "PNG",
+    "exportJpg": "JPG",
     "quit": "Quitter",
     "undo": "Annuler",
     "redo": "Rétablir",
@@ -38,7 +42,7 @@
     "rotate180": "Rotation 180°",
     "flipH": "Symétrie horizontale",
     "flipV": "Symétrie verticale",
-    "crop": "Recadrer sur la sélection",
+    "crop": "Rogner selon la sélection",
     "newLayer": "Nouveau calque",
     "duplicateLayer": "Dupliquer le calque",
     "deleteLayer": "Supprimer le calque",
@@ -67,6 +71,7 @@
   "shortcut": {
     "new": "Ctrl+N",
     "open": "Ctrl+O",
+    "close": "Ctrl+W",
     "save": "Ctrl+S",
     "saveAs": "Ctrl+Maj+S",
     "undo": "Ctrl+Z",
@@ -249,11 +254,18 @@
   },
   "canvas": {
     "noDoc": "Aucun document ouvert.",
-    "newDoc": "Nouveau document",
-    "openImage": "Ouvrir une image…"
+    "newDoc": "Nouveau projet",
+    "openImage": "Ouvrir…"
   },
   "titleBar": {
     "untitled": "Sans titre"
+  },
+  "unsaved": {
+    "title": "Modifications non enregistrées",
+    "message": "Le document contient des modifications non enregistrées. Enregistrer avant de continuer ?",
+    "save": "Enregistrer",
+    "discard": "Ne pas enregistrer",
+    "cancel": "Annuler"
   },
   "statusBar": {
     "position": "Position : ",

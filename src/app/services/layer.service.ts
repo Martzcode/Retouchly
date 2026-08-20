@@ -1,5 +1,5 @@
 import { inject, Injectable, signal } from '@angular/core';
-import { BlendMode, LayerSnapshot } from '../types';
+import { BlendMode, BLEND_MODES, LayerSnapshot, ProjectData, ProjectLayerData } from '../types';
 import { I18nService } from './i18n.service';
 
 export interface Layer {
@@ -571,6 +571,111 @@ export class LayerService {
     this._width = newW;
     this._height = newH;
     this._layers.update((list) => [...list]);
+  }
+
+  /** Recadre tous les calques selon un rectangle englobant. */
+  cropAll(x: number, y: number, w: number, h: number): void {
+    if (w < 1 || h < 1) {
+      return;
+    }
+    const list = this._layers();
+    for (const layer of list) {
+      const img = layer.ctx.getImageData(x, y, w, h);
+      layer.canvas.width = w;
+      layer.canvas.height = h;
+      layer.ctx.imageSmoothingEnabled = false;
+      layer.ctx.putImageData(img, 0, 0);
+      if (layer._basePixels) {
+        layer._basePixels = layer.ctx.getImageData(0, 0, w, h);
+      }
+    }
+    this._width = w;
+    this._height = h;
+    this._layers.update((list) => [...list]);
+  }
+
+  /** Sérialise le document complet (calques + métadonnées) au format projet Retouchly. */
+  exportProject(): string {
+    const layers: ProjectLayerData[] = this._layers().map((l) => ({
+      name: l.name,
+      visible: l.visible,
+      locked: l.locked,
+      opacity: l.opacity,
+      blendMode: l.blendMode,
+      rotation: l.rotation,
+      scale: l.scale,
+      dataUrl: l.canvas.toDataURL('image/png'),
+    }));
+    const data: ProjectData = {
+      app: 'Retouchly',
+      version: 1,
+      width: this._width,
+      height: this._height,
+      layers,
+    };
+    return JSON.stringify(data);
+  }
+
+  /** Reconstruit le document à partir d'un JSON de projet Retouchly. */
+  async loadProject(json: string): Promise<boolean> {
+    let data: ProjectData;
+    try {
+      data = JSON.parse(json) as ProjectData;
+    } catch {
+      return false;
+    }
+    if (
+      !data ||
+      data.app !== 'Retouchly' ||
+      !Number.isFinite(data.width) ||
+      !Number.isFinite(data.height) ||
+      !Array.isArray(data.layers) ||
+      data.layers.length === 0
+    ) {
+      return false;
+    }
+    const w = Math.max(1, Math.round(data.width));
+    const h = Math.max(1, Math.round(data.height));
+    const loaded: Layer[] = [];
+    for (const src of data.layers) {
+      if (!src || typeof src.dataUrl !== 'string') {
+        return false;
+      }
+      const img = await this.loadImage(src.dataUrl);
+      if (!img) {
+        return false;
+      }
+      const { canvas, ctx } = createBuffer(w, h);
+      ctx.imageSmoothingEnabled = false;
+      ctx.drawImage(img, 0, 0);
+      loaded.push({
+        id: makeId(),
+        name: src.name || this.i18n.t('layers.layer'),
+        visible: src.visible !== false,
+        locked: src.locked === true,
+        opacity: Math.max(0, Math.min(100, src.opacity ?? 100)),
+        blendMode: BLEND_MODES.includes(src.blendMode) ? src.blendMode : 'source-over',
+        rotation: src.rotation ?? 0,
+        scale: src.scale ?? 100,
+        canvas,
+        ctx,
+        _basePixels: null,
+      });
+    }
+    this._width = w;
+    this._height = h;
+    this._layers.set(loaded);
+    this._activeLayerId.set(loaded[loaded.length - 1].id);
+    return true;
+  }
+
+  private loadImage(dataUrl: string): Promise<HTMLImageElement | null> {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = dataUrl;
+    });
   }
 
   private nextLayerName(): string {

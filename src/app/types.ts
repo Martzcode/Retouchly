@@ -5,6 +5,34 @@ export interface OpenImageResult {
   dataUrl: string;
 }
 
+export interface OpenDocumentResult {
+  kind: 'project' | 'image';
+  path: string;
+  width: number;
+  height: number;
+  dataUrl: string | null;
+  content: string | null;
+}
+
+export interface ProjectLayerData {
+  name: string;
+  visible: boolean;
+  locked: boolean;
+  opacity: number;
+  blendMode: BlendMode;
+  rotation: number;
+  scale: number;
+  dataUrl: string;
+}
+
+export interface ProjectData {
+  app: string;
+  version: number;
+  width: number;
+  height: number;
+  layers: ProjectLayerData[];
+}
+
 export interface DocumentInfo {
   width: number;
   height: number;
