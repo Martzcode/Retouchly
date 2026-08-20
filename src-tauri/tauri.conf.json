@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "Retouchly",
-  "version": "0.1.0",
+  "version": "26.8.9",
   "identifier": "com.retouchly.app",
   "build": {
     "beforeDevCommand": "npm run dev",

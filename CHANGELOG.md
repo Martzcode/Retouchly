@@ -4,9 +4,16 @@ Toutes les modifications notables de Retouchly sont documentées dans ce fichier
 
 Le format est basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
-## [0.1.0-beta] - 2026-08-20
+## [2026.08.10] - 2026-08-20
 
-Première version beta de Retouchly, éditeur d'images open source inspiré de Paint.NET, construit avec Angular 19 et Rust (Tauri 2).
+### Ajouté
+
+- **Identité visuelle**
+  - Nouveau logo Retouchly (`src/assets/logo.png`) utilisé partout : fenêtre, barre de tâches, icônes de bundle (Windows .ico, macOS .icns, Linux PNG), barre de titre et dialog À propos
+
+## [2026.08.9] - 2026-08-20
+
+Première version de Retouchly, éditeur d'images open source inspiré de Paint.NET, construit avec Angular 19 et Rust (Tauri 2).
 
 ### Ajouté
 

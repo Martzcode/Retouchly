@@ -2542,7 +2542,7 @@ dependencies = [
 
 [[package]]
 name = "retouchly"
-version = "0.1.0"
+version = "26.8.9"
 dependencies = [
  "base64 0.23.1",
  "glib",

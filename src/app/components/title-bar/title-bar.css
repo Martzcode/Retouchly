@@ -22,13 +22,14 @@
 }
 
 .app-identity span,
-.app-identity svg {
+.app-identity img {
   pointer-events: none;
 }
 
 .logo {
   width: 18px;
   height: 18px;
+  object-fit: contain;
 }
 
 .app-name {
